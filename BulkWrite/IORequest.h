@@ -55,8 +55,8 @@ class IORequest : public IRequest
         Complete(IOResult ioResult,Status status = COMPLETED, size_t transferedBytes = 0);
 
         /* Wait on the operation to complete*/
-        bool
-        Wait() override ;
+		virtual void Wait() override;
+		virtual bool Wait(std::chrono::seconds seconds) override ;
 
         /** Check if request is fully processed, i.e. all handlers were invoked and
          * no more actions pending.

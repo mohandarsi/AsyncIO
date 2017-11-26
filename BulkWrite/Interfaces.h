@@ -50,7 +50,12 @@ interface BULKWRITE_API IRequest
 
     typedef std::shared_ptr<IRequest> Ptr;
      /* Wait on the operation to complete*/
-    virtual bool Wait() PURE;
+    virtual void Wait() PURE;
+
+	/* Wait on the operation to complete for specified number of seconds
+	returns false if timeout expires
+	*/
+	virtual bool Wait(std::chrono::seconds seconds) PURE;
     virtual IOResult  GetIOResult(void)const PURE;
     virtual size_t GetTransferedBytes(void) const PURE ;
 

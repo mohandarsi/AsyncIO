@@ -53,6 +53,8 @@ FileStream::GetName() const
 
 void FileStream::SetFileSize(size_t len)
 {
+	if (m_ptrFileHandle->GetWriteActivity() == true)
+		throw std::exception("Currently Write is under Progress for this stream");
 	m_ptrFileHandle->SetFileSize(len);
 }
 
@@ -93,9 +95,6 @@ FileStream::Write(const void *data, size_t len,
        offset = m_currentPos;
     
 	WriteRequest* rawWriterequest = new WriteRequest(offset, data, len);// dynamic_cast<WriteRequest*>(writeRequest.get());
-    /*rawWriterequest->AddCompletionHandler(boost::bind(&FileStream::HandleWriteCompletion, this,_1,_2));
-    if(completion_handler != NULL)
-        rawWriterequest->AddCompletionHandler(completion_handler);*/
 	auto callback = std::bind(&FileStream::HandleWriteCompletion, this, std::placeholders::_1, std::placeholders::_2);
 	rawWriterequest->AddCompletionHandler(callback);
 	if (completion_handler != NULL)

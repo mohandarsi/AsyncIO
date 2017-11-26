@@ -2,7 +2,6 @@
 #include "FileStream.h"
 
 
-
 void
 IORequest::Complete(IOResult ioResult,Status status, size_t transferedBytes)
 {
@@ -30,14 +29,22 @@ IORequest::Complete(IOResult ioResult,Status status, size_t transferedBytes)
 
 }
 
-bool
+void
 IORequest::Wait()
 {
     //std::cout<<"DEBUG:IORequest::Wait enter \n";
     std::unique_lock<std::mutex> lock(m_mutex);
 	m_condVar.wait(lock, [&] { return IsCompleted(); });
     //std::cout<<"\n DEBUG:IORequest::Wait exit \n";
-    return true;
+}
+
+bool
+IORequest::Wait(std::chrono::seconds seconds)
+{
+	//std::cout<<"DEBUG:IORequest::Wait enter \n";
+	std::unique_lock<std::mutex> lock(m_mutex);
+	return m_condVar.wait_for(lock, seconds,[&] { return IsCompleted(); });
+	//std::cout<<"\n DEBUG:IORequest::Wait exit \n";
 }
 
 void WriteRequest::HandleCompletion()

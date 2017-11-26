@@ -58,14 +58,18 @@ int main()
 	auto start = chrono::high_resolution_clock::now();
 	auto bytes = noImages*readsize;
 
-	//filestream->SetFileSize(bytes);
+	filestream->SetFileSize(bytes);
 
 	while (i<noImages) // 5000 images
 	{
 		//std::cout << " \n DEBUG:Length writing: " << readsize;
-		IRequest::Ptr ioptr = filestream->Write(image_arr, readsize,-1,nullptr);
-		ioptr->Wait();
+		IRequest::Ptr ioptr = filestream->Write(image_arr, readsize,-1, nullptr);
+		if (ioptr->Wait(1s) == false)
+		{
+			std::cout << "\n failed at iteration :" << i;
+		}
 		++i;
+
 	}
 	auto end = chrono::high_resolution_clock::now();
 

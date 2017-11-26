@@ -57,7 +57,7 @@ FileHandle::FileHandle(
     }
 
     this->m_hFileHandle = CreateFileA(path.c_str(), access, share_mode,
-                NULL, creation, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED | FILE_FLAG_NO_BUFFERING,
+                NULL, creation, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED,
                 0);
    
     if (this->m_hFileHandle == INVALID_HANDLE_VALUE) {
@@ -96,7 +96,14 @@ void FileHandle::SetFileSize(size_t size)
 	auto result = SetFilePointerEx(this->m_hFileHandle, filePosition,NULL, FILE_BEGIN);
 	if (result == INVALID_SET_FILE_POINTER)
 	{
-		std::cout << "ERROR: SetFilePointer failed (continuation): " << GetSystemError().c_str();
+		std::cout << "ERROR: SetFilePointer failed: " << GetSystemError().c_str();
+	}
+	else
+	{
+		if (!SetEndOfFile(this->m_hFileHandle))
+		{
+			std::cout << "ERROR: SetEndOfFile failed : " << GetSystemError().c_str();
+		}
 	}
 }
 
@@ -167,7 +174,7 @@ FileHandle::ReadCompleteCallback(size_t transfer_size, DWORD error)
 void
 FileHandle::WriteCompleteCallback(size_t transfer_size, DWORD error)
 {
-    std::cout<<"DEBUG:FileHandle::WriteCompleteCallback \n";
+   // std::cout<<"DEBUG:FileHandle::WriteCompleteCallback \n";
 
 	if (m_bclosed == true || m_hFileHandle == INVALID_HANDLE_VALUE)
 	{
