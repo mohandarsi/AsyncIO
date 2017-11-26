@@ -2,10 +2,24 @@
     DYNAMIC LINK LIBRARY : BulkWrite Project Overview
 ========================================================================
 
-AppWizard has created this BulkWrite DLL for you.
+Usage:-
 
-This file contains a summary of what you will find in each of the files that
-make up your BulkWrite application.
+//create data
+ #define MAX_SIZE	  (2 * 1024 * 1024)
+ static BYTE arr[MAX_SIZE];			
+ memset(arr, 1, sizeof(image_arr));
+  
+//open file with write
+std::string filename("c:\\Image.data");
+IFileStream::Ptr filestream = file->Open(filename, "w+");
+
+//write on the stream
+auto ioRequestPtr = filestream->Write(image_arr,sizeof(arr),-1,nullptr);
+
+//wait on the request to complete
+ioRequestPtr->Wait();
+
+TODO: Implelemention of Read yet to be supported.
 
 
 BulkWrite.vcxproj
