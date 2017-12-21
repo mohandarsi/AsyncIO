@@ -5,6 +5,7 @@
 /** Generic request for implementing asynchronous  operations.  */
 class IORequest : public IRequest
 {
+	friend class FileHandle;
  public:
         
            /** Request processing status */
@@ -22,7 +23,7 @@ class IORequest : public IRequest
             CANCELED
         };
 
-        IORequest(const IFileStream::Offset offset):m_offset(offset){
+        IORequest(const IFileStream::Offset offset,const void* buffer, const size_t len):m_offset(offset),m_buffer(buffer), m_bufferLen(len) {
            m_status =  PENDING ;
            m_bCompletionProcessed = false;
            m_transferedBytes = 0;
@@ -75,6 +76,11 @@ class IORequest : public IRequest
             return m_IOResult;
         }
 
+		const void*
+			GetBuffer() { return m_buffer; }
+
+		size_t
+			GetBufferLength() const { return m_bufferLen; }
 protected:
         void SetStatus(Status status) 
         {
@@ -94,6 +100,10 @@ protected:
        virtual void HandleCompletion() PURE;
 
 protected:
+		/** Buffer with data to write/read.  */
+		const void* m_buffer;
+		
+		size_t m_bufferLen;
 
          /** I/O operation offset if necessary. */
         IFileStream::Offset m_offset;
@@ -115,40 +125,3 @@ protected:
         size_t m_transferedBytes;
 };
 
-class WriteRequest : public IORequest
-{
-   
-	
-public:
-	typedef std::function<void (IOResult result, size_t size)> WriteCompletionHandlerType;
-    
-    friend class FileHandle;
-
-    WriteRequest(const IFileStream::Offset offset,const void* buffer,const size_t len):IORequest(offset),
-      m_buffer(buffer),m_bufferLen(len)
-    {}
-
-   	void AddCompletionHandler(WriteCompletionHandlerType  handler)
-	{
-		m_Completionhandlers.push_back(handler);
-		//m_handler = handler;
-	}
-
-   const void* 
-    GetBuffer() { return m_buffer;}
-
-    size_t 
-    GetBufferLength(){return m_bufferLen;}
-
-    virtual ~WriteRequest(){
-		//std::cout << " \n DEBUG: Destructor WriteRequest \n";
-    }
-protected:
-    virtual void HandleCompletion() override;
-
-private:
-    /** Buffer with data to write.  */
-    const void* m_buffer;
-    size_t m_bufferLen;
-	std::vector<WriteCompletionHandlerType> m_Completionhandlers;
-};

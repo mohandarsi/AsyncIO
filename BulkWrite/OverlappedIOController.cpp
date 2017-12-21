@@ -137,7 +137,5 @@ OverlappedIOController::DispatcherThread()
 			std::cout << "ERROR:OverlappedIOController::DispatcherThread Unknown Queue Status \n";
 			throw;
 		}
-		
-       
     }
 }

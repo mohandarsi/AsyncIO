@@ -30,9 +30,9 @@ public:
     virtual void
     Write(IRequest::Ptr) ;
 
-    /** Schedule read operation based on current read request. */
-    virtual void
-        Read() {}
+	/** Schedule read operation based on current read request. */
+	virtual void
+		Read(IRequest::Ptr);
 
     bool 
         IsClosed() { return m_bclosed;}
@@ -68,21 +68,19 @@ private:
 	void  Close();
 
 private:
-    struct WriteContext
+    struct ReadContext
     {
 
          /** Holds current WriteRequest ptr. */
-        IRequest::Ptr m_ptrCurrentWriteRequest;
+        IRequest::Ptr m_ptrCurrentReadRequest;
         
         /** Control block for current write operation. */
-        OVERLAPPED m_writeCB;
+        OVERLAPPED m_ReadCB;
 
-         /** Number of bytes pending for write. */
-        size_t m_writeSize;
-
-         /** File offset for write operation. */
-        IFileStream::Offset  m_writeOffset;
+         /** Number of bytes pending for read. */
+        size_t m_ReadSize;
     };
+
     friend class OverlappedIOController;
 
     /** Opened file handle for reading/writing. */
@@ -108,11 +106,8 @@ private:
     /** Control block for current write operation. */
     OVERLAPPED m_writeCB;
     
-    /** Read buffer. */
-    std::shared_ptr<std::vector<UINT8>> read_buf;
-
     /** Number of bytes pending for read. */
-    size_t read_size,
+    size_t m_read_size,
     /** Number of bytes pending for write. */
            m_writeSize,
    /** Minimal number of bytes to read in current read operation. */
@@ -126,5 +121,5 @@ private:
     /** Mutex for protecting write control block. */
     std::mutex m_writeMutex,
     /** Mutex for protecting read control block. */
-               read_mutex;
+               m_read_mutex;
 };

@@ -47,14 +47,7 @@ IORequest::Wait(std::chrono::seconds seconds)
 	//std::cout<<"\n DEBUG:IORequest::Wait exit \n";
 }
 
-void WriteRequest::HandleCompletion()
-{
-	for each (auto handler in m_Completionhandlers)
-	{
-		handler(m_IOResult, m_transferedBytes);
-	}
-   // m_Completionhandlers(m_IOResult,m_transferedBytes);
-}
+
 
 //void WriteRequest::Cancel()
 //{

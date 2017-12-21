@@ -1,6 +1,7 @@
 
 #include "FileStream.h"
-#include "IORequest.h"
+#include "WriteIORequest.h"
+#include "ReadIORequest.h"
 #include "FileHandle.h"
 #include "Utils.h"
 
@@ -120,8 +121,8 @@ FileHandle::Close()
 	/* Any pending I/O should receive notification after that and release the
 		* stream.
 		*/
-	std::lock(read_mutex, m_writeMutex);
-	std::lock_guard<std::mutex> lk1(read_mutex, std::adopt_lock);
+	std::lock(m_read_mutex, m_writeMutex);
+	std::lock_guard<std::mutex> lk1(m_read_mutex, std::adopt_lock);
 	std::lock_guard<std::mutex> lk2(m_writeMutex, std::adopt_lock);
 
 	CancelIoEx(m_hFileHandle,NULL);
@@ -168,6 +169,10 @@ void
 FileHandle::ReadCompleteCallback(size_t transfer_size, DWORD error)
 {
 	std::cout << "ERROR: ReadCompleteCallback Not Implemented";
+
+	IOResult result = OK;
+	//Complete(result, IORequest::Status::COMPLETED, transfer_size);
+
 	throw std::logic_error("Not implemented ReadCompleteCallback");
 }
 
@@ -186,7 +191,7 @@ FileHandle::WriteCompleteCallback(size_t transfer_size, DWORD error)
 		std::cout << "No current Write activity \n";
 		return;
 	}
-	WriteRequest* ptrCurrentWriteRequest = dynamic_cast<WriteRequest*>(m_ptrCurrentWriteRequest.get());
+	WriteIORequest* ptrCurrentWriteRequest = dynamic_cast<WriteIORequest*>(m_ptrCurrentWriteRequest.get());
     
 	std::unique_lock<std::mutex> lock(m_writeMutex);
     
@@ -216,6 +221,7 @@ FileHandle::WriteCompleteCallback(size_t transfer_size, DWORD error)
         //GetSystemError()
         result = MapError(error);
     } else if ( m_writeSize > 0) { //still some data is remaining
+		std::cout << "INFO: WriteFile (continuation): " << m_writeSize;
         /* Incomplete write, schedule the rest. */
         memset(&m_writeCB, 0, sizeof(m_writeCB));
         if (m_writeOffset != FileStream::OFFSET_NONE) {
@@ -273,7 +279,7 @@ void
 FileHandle::Write(IRequest::Ptr writerequest)
 {
     //std::cout<<"DEBUG::FileHandle::Write enter \n";
-    WriteRequest* write_request = dynamic_cast<WriteRequest*>(writerequest.get());
+	WriteIORequest* write_request = dynamic_cast<WriteIORequest*>(writerequest.get());
     if(write_request == NULL) return;
 
 	size_t writeSize = write_request->GetBufferLength();
@@ -332,4 +338,56 @@ FileHandle::Write(IRequest::Ptr writerequest)
 	//std::cout << "DEBUG:FileHandle::Write exit \n";
 	return;
    
+}
+
+void
+FileHandle::Read(IRequest::Ptr readRequestPtr)
+{
+	std::cout<<"DEBUG::FileHandle::Read enter \n";
+	ReadIORequest* readRequest = dynamic_cast<ReadIORequest*>(readRequestPtr.get());
+	if (readRequest == nullptr) return;
+
+	size_t readSize = readRequest->GetBufferLength();
+	if (readSize <= 0)
+	{
+		// A request to write 0 bytes on a handle is a no-op.
+		readRequest->Complete(IOResult::OK, IORequest::Status::COMPLETED, readSize);
+		return;
+	}
+	OVERLAPPED readCB;
+	std::memset(&readCB, 0, sizeof(readCB));
+
+	auto readOffset = readRequest->GetOffset();
+
+	if (readOffset == FileStream::OFFSET_NONE) {
+		readCB.Offset = 0;
+		readCB.OffsetHigh = 0;
+	}
+	else {
+		// Write the data. 
+		DWORD offset = (DWORD)readOffset;
+		readCB.Offset = offset & 0xFFFFFFFF;
+		//m_writeCB.OffsetHigh = 0;
+		readCB.OffsetHigh = (DWORD)(readOffset >> sizeof(readCB.Offset) * 8);
+	}
+
+	readRequest->SetStatus(IORequest::PROCESSING);
+
+	DWORD transferedBytes = 0;
+	BOOL ok = ReadFile(m_hFileHandle, const_cast<void*>(readRequest->GetBuffer()),
+		readSize, &transferedBytes, &readCB);
+
+	if (ok == FALSE) // write file failed??
+	{
+		DWORD error = ::GetLastError();
+		if (error != ERROR_IO_PENDING && error != ERROR_MORE_DATA)
+		{
+			std::cout << "ERROR : FileHandle::Write failed:" << error;
+			readRequest->Complete(MapError(error), IORequest::Status::COMPLETED, transferedBytes);
+		}
+	}
+	
+	std::cout << "DEBUG:FileHandle::Read exit \n";
+	return;
+
 }

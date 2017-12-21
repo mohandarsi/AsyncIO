@@ -1,5 +1,5 @@
 #include "FileStream.h"
-#include "IORequest.h"
+#include "WriteIORequest.h"
 #include "FileHandle.h"
 
 FileMode::FileMode(const std::string &mode_str)
@@ -94,7 +94,7 @@ FileStream::Write(const void *data, size_t len,
     if(offset == OFFSET_NONE)
        offset = m_currentPos;
     
-	WriteRequest* rawWriterequest = new WriteRequest(offset, data, len);// dynamic_cast<WriteRequest*>(writeRequest.get());
+	WriteIORequest* rawWriterequest = new WriteIORequest(offset, data, len);// dynamic_cast<WriteRequest*>(writeRequest.get());
 	auto callback = std::bind(&FileStream::HandleWriteCompletion, this, std::placeholders::_1, std::placeholders::_2);
 	rawWriterequest->AddCompletionHandler(callback);
 	if (completion_handler != NULL)
