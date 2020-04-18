@@ -14,7 +14,6 @@ public:
 	void AddCompletionHandler(WriteCompletionHandlerType  handler)
 	{
 		m_Completionhandlers.push_back(handler);
-		//m_handler = handler;
 	}
 
 	virtual ~WriteIORequest() {

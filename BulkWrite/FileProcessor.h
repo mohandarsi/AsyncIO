@@ -2,6 +2,7 @@
 #include "interfaces.h"
 
 class OverlappedIOController;
+class FileStream;
 class FileProcessor : public IFileProcessor
 {
 public:
@@ -9,8 +10,8 @@ public:
     virtual ~FileProcessor(void);
 
     /*Open file.*/
-    IFileStream::Ptr
-    Open(const std::string &name,const std::string &mode);
+	std::unique_ptr<IFileStream>
+    Open(const std::string &name,const std::string &mode) override;
 
     void Enable();
 
@@ -18,5 +19,5 @@ private:
     /** I/O controller instance. */
     std::unique_ptr<OverlappedIOController> m_ptrIOcontroller;
 
-    void RegisterStream(IFileStream::Ptr);
+    void RegisterStream(FileStream&);
 };

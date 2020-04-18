@@ -4,12 +4,12 @@
 #include "FileHandle.h"
 #include "OverlappedIOController.h"
 
-IFileProcessor* CreateFileProcessor()
+std::unique_ptr<IFileProcessor> CreateFileProcessor()
 {
-    return new FileProcessor();
+    return std::make_unique<FileProcessor>();
 }
 FileProcessor::FileProcessor(void):
-         m_ptrIOcontroller(new OverlappedIOController())
+         m_ptrIOcontroller(std::make_unique<OverlappedIOController>())
 {
 }
 
@@ -22,18 +22,16 @@ void FileProcessor::Enable()
      m_ptrIOcontroller->Enable();
 }
 
-IFileStream::Ptr
+std::unique_ptr<IFileStream>
 FileProcessor::Open(const std::string &name, const std::string &mode)
 {
-    IFileStream::Ptr stream(new FileStream(name, mode));
-    RegisterStream(stream);
-    return stream;
+	auto fileStream = new FileStream(name, mode);
+    RegisterStream(*fileStream);
+	return std::unique_ptr<IFileStream>(fileStream);
 }
 
 void
-FileProcessor::RegisterStream(IFileStream::Ptr stream)
+FileProcessor::RegisterStream(FileStream& stream)
 {
-    FileStream* fileStream = dynamic_cast<FileStream*>(stream.get());
-    fileStream->m_ptrFileHandle->SetStream(stream);
-    m_ptrIOcontroller->RegisterHandle(*fileStream->m_ptrFileHandle);
+    m_ptrIOcontroller->RegisterHandle(*stream.m_ptrFileHandle.get());
 }

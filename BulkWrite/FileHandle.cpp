@@ -57,11 +57,11 @@ FileHandle::FileHandle(
         assert(false);
     }
 
-    this->m_hFileHandle = CreateFileA(path.c_str(), access, share_mode,
+    const auto hFileHandle = CreateFileA(path.c_str(), access, share_mode,
                 NULL, creation, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED,
                 0);
    
-    if (this->m_hFileHandle == INVALID_HANDLE_VALUE) {
+    if (hFileHandle == INVALID_HANDLE_VALUE) {
 		std::string error = GetSystemError();
 		std::cout << "Error in CreateFileA :" << error.c_str() << "Path : "<< path.c_str() << "\n";
         switch (GetLastError()) {
@@ -76,6 +76,7 @@ FileHandle::FileHandle(
             throw std::exception("Failed to open file");
         }
     }
+    m_hFileHandle = std::shared_ptr<void>(hFileHandle, CloseHandle);
 
     m_bclosed = false;
     m_hFileWriteHandle = INVALID_HANDLE_VALUE;
@@ -85,7 +86,6 @@ FileHandle::~FileHandle()
     if (!m_bclosed) {
         Close();
     }
-
 	std::cout << " \n DEBUG:Destructor FileHandle \n";
 }
 
@@ -94,14 +94,14 @@ void FileHandle::SetFileSize(size_t size)
 	//auto result = SetFilePointer(this->m_hFileHandle, size, NULL, FILE_BEGIN);
 	LARGE_INTEGER filePosition = { 0 };
 	filePosition.QuadPart = size;
-	auto result = SetFilePointerEx(this->m_hFileHandle, filePosition,NULL, FILE_BEGIN);
+	auto result = SetFilePointerEx(m_hFileHandle.get(), filePosition,NULL, FILE_BEGIN);
 	if (result == INVALID_SET_FILE_POINTER)
 	{
 		std::cout << "ERROR: SetFilePointer failed: " << GetSystemError().c_str();
 	}
 	else
 	{
-		if (!SetEndOfFile(this->m_hFileHandle))
+		if (!SetEndOfFile(m_hFileHandle.get()))
 		{
 			std::cout << "ERROR: SetEndOfFile failed : " << GetSystemError().c_str();
 		}
@@ -125,11 +125,10 @@ FileHandle::Close()
 	std::lock_guard<std::mutex> lk1(m_read_mutex, std::adopt_lock);
 	std::lock_guard<std::mutex> lk2(m_writeMutex, std::adopt_lock);
 
-	CancelIoEx(m_hFileHandle,NULL);
+	CancelIoEx(m_hFileHandle.get(),NULL);
 	DWORD error = GetLastError();
-	CloseHandle(m_hFileHandle);
-	m_hFileHandle = INVALID_HANDLE_VALUE;
-	if (m_hFileWriteHandle != INVALID_HANDLE_VALUE) {
+	m_hFileHandle.reset(INVALID_HANDLE_VALUE);
+    if (m_hFileWriteHandle != INVALID_HANDLE_VALUE) {
 		CancelIoEx(m_hFileWriteHandle, NULL);
 		CloseHandle(m_hFileWriteHandle);
 		m_hFileWriteHandle = INVALID_HANDLE_VALUE;
@@ -181,7 +180,7 @@ FileHandle::WriteCompleteCallback(size_t transfer_size, DWORD error)
 {
    // std::cout<<"DEBUG:FileHandle::WriteCompleteCallback \n";
 
-	if (m_bclosed == true || m_hFileHandle == INVALID_HANDLE_VALUE)
+	if (m_bclosed == true || m_hFileHandle.get() == INVALID_HANDLE_VALUE)
 	{
 		std::cout << "ERROR: FileHandle::WriteCompleteCallback File closed \n";
 		return;
@@ -238,7 +237,7 @@ FileHandle::WriteCompleteCallback(size_t transfer_size, DWORD error)
         }
         const void *buf =
             reinterpret_cast<const UINT8 *>(ptrCurrentWriteRequest->GetBuffer()) + transferedBytes;
-        if (!WriteFile(m_hFileWriteHandle == INVALID_HANDLE_VALUE ? m_hFileHandle : m_hFileWriteHandle,
+        if (!WriteFile(m_hFileWriteHandle == INVALID_HANDLE_VALUE ? m_hFileHandle.get() : m_hFileWriteHandle,
                        buf, m_writeSize, NULL, &m_writeCB)
 			) {
 
@@ -320,7 +319,7 @@ FileHandle::Write(IRequest::Ptr writerequest)
 	m_ptrCurrentWriteRequest = writerequest;
 	
 	DWORD transferedBytes = 0;
-	BOOL ok = WriteFile(m_hFileWriteHandle == INVALID_HANDLE_VALUE ? m_hFileHandle : m_hFileWriteHandle,
+	BOOL ok = WriteFile(m_hFileWriteHandle == INVALID_HANDLE_VALUE ? m_hFileHandle.get() : m_hFileWriteHandle,
 		write_request->GetBuffer(),
 		writeSize, &transferedBytes, &m_writeCB);
 
@@ -374,7 +373,7 @@ FileHandle::Read(IRequest::Ptr readRequestPtr)
 	readRequest->SetStatus(IORequest::PROCESSING);
 
 	DWORD transferedBytes = 0;
-	BOOL ok = ReadFile(m_hFileHandle, const_cast<void*>(readRequest->GetBuffer()),
+	BOOL ok = ReadFile(m_hFileHandle.get(), const_cast<void*>(readRequest->GetBuffer()),
 		readSize, &transferedBytes, &readCB);
 
 	if (ok == FALSE) // write file failed??

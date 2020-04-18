@@ -93,7 +93,7 @@ public:
 
     /** Initiate write operation.*/
     IRequest::Ptr 
-    Write(const void *data, size_t len, Offset offset=OFFSET_NONE, WriteHandler completion_handler=NULL);
+    Write(const void *data, size_t len, Offset offset=OFFSET_NONE, WriteHandler completion_handler=NULL) override;
     
     void WriteSync(const void *data, size_t len, Offset offset=OFFSET_NONE);
 
@@ -103,9 +103,7 @@ public:
 
     //support read operations in future
 
-    void HandleWriteCompletion(IOResult result,size_t length);
-
-	void SetFileSize(size_t len);
+	void SetFileSize(size_t len) override;
 
 private:
  

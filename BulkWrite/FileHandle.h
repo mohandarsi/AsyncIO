@@ -84,7 +84,7 @@ private:
     friend class OverlappedIOController;
 
     /** Opened file handle for reading/writing. */
-    HANDLE m_hFileHandle;
+    std::shared_ptr<void> m_hFileHandle;
     /** Use this handle for writing, if specified. */
     HANDLE m_hFileWriteHandle;
 

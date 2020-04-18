@@ -72,7 +72,7 @@ interface BULKWRITE_API IFileStream
     typedef std::shared_ptr<IFileStream> Ptr;
 
     /** Default prototype for write operation completion handler. */
-    typedef   void    (*WriteHandler) (IOResult , size_t len);
+    using WriteHandler = void(*) (IOResult , size_t len);
 
     virtual IRequest::Ptr
     Write(const void *data, size_t len, Offset offset, WriteHandler completion_handler) PURE;
@@ -93,7 +93,7 @@ interface BULKWRITE_API IFileProcessor
 	        If a file with the same name already exists its contents are discarded and the file is treated as a new empty file.
 	
 	*/
-    virtual IFileStream::Ptr
+    virtual std::unique_ptr<IFileStream>
     Open(const std::string &name,const std::string &mode) PURE;
 
 	/*
@@ -104,11 +104,5 @@ interface BULKWRITE_API IFileProcessor
 	DEFAULT_DESTRUCTOR(IFileProcessor)
 };
 
-#ifdef __cplusplus
- # define EXTERN_C     extern "C"
-#else
- #define EXTERN_C
-#endif // __cplusplus
 
-
-EXTERN_C  BULKWRITE_API IFileProcessor*  CreateFileProcessor();
+BULKWRITE_API std::unique_ptr<IFileProcessor>  CreateFileProcessor();

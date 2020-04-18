@@ -87,20 +87,27 @@ FileStream::Write(const void *data, size_t len,
 {
 
     //std::cout<<"DEBUG:FileStream::Write \n";
-    //make sure no write is currently handled
-    if(m_ptrFileHandle->GetWriteActivity() ==true)
-        throw std::exception("Currently Write is under Progress for this stream");
-    
-    if(offset == OFFSET_NONE)
-       offset = m_currentPos;
-    
-	WriteIORequest* rawWriterequest = new WriteIORequest(offset, data, len);// dynamic_cast<WriteRequest*>(writeRequest.get());
-	auto callback = std::bind(&FileStream::HandleWriteCompletion, this, std::placeholders::_1, std::placeholders::_2);
-	rawWriterequest->AddCompletionHandler(callback);
-	if (completion_handler != NULL)
-		rawWriterequest->AddCompletionHandler(completion_handler);
-	IRequest::Ptr writeRequest(rawWriterequest);
+    if (offset == OFFSET_NONE)
+    {
+        if (m_ptrFileHandle->GetWriteActivity() == true)
+            throw std::exception("Currently Write is under Progress for this stream");
+        offset = m_currentPos;
+    }
+
+    WriteIORequest* rawWriterequest = new WriteIORequest(offset, data, len);
+
+    rawWriterequest->AddCompletionHandler([&](IOResult result, std::size_t length) {
+        if (result == OK) {
+            m_currentPos += length;
+        }
+    });
+
+    if (completion_handler)
+        rawWriterequest->AddCompletionHandler(completion_handler);
+
+    IRequest::Ptr writeRequest(rawWriterequest);
     m_ptrFileHandle->Write(writeRequest);
+    
     return writeRequest;
 
 }
@@ -109,16 +116,4 @@ void FileStream::WriteSync(const void *data, size_t len, Offset offset)
 {
     IRequest::Ptr ioptr = Write(data,len,offset);
     ioptr->Wait();
-}
-
-void
-FileStream::HandleWriteCompletion(IOResult result,std::size_t length)
-{
-
-    //XXX use real number of bytes written
-    if (result == OK ) {
-
-        m_currentPos += length;
-    }
-
 }
