@@ -27,7 +27,7 @@ public:
 
 private:
     /** Completion port handle for all file handles. */
-    HANDLE m_hCompletionPort;
+    std::shared_ptr<void> m_hCompletionPort;
    
 	typedef std::deque<std::thread> Threads;
 
