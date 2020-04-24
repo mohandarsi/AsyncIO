@@ -1,13 +1,18 @@
 #include "FileProcessor.h"
 #include "FileStream.h"
-#include "IORequest.h"
 #include "FileHandle.h"
 #include "OverlappedIOController.h"
+#include "FileMode.h"
 
-std::unique_ptr<IFileProcessor> CreateFileProcessor()
+
+std::unique_ptr<FileAPI::IFileProcessor> CreateFileProcessor()
 {
-    return std::make_unique<FileProcessor>();
+    return std::make_unique<FileAPI::FileProcessor>();
 }
+
+namespace FileAPI
+{
+
 FileProcessor::FileProcessor(void):
          m_ptrIOcontroller(std::make_unique<OverlappedIOController>())
 {
@@ -34,4 +39,6 @@ void
 FileProcessor::RegisterStream(FileStream& stream)
 {
     m_ptrIOcontroller->RegisterHandle(*stream.m_ptrFileHandle.get());
+}
+
 }

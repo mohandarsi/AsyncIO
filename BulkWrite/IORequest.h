@@ -7,24 +7,8 @@ class IORequest : public IRequest
 {
 	friend class FileHandle;
  public:
-        
-           /** Request processing status */
-        enum Status {
-            /** Request is currently pending for processing.       */
-            PENDING,
-            CANCELLATION_PENDING,
-            CANCELING,
-            PROCESSING,
-            ABORT_PENDING,
-            ABORTED,
-            /** Request successfully processed. */
-            COMPLETED,
-            /** Request was canceled. */
-            CANCELED
-        };
 
-        IORequest(const IFileStream::Offset offset,const void* buffer, const size_t len):m_offset(offset),m_buffer(buffer), m_bufferLen(len) {
-           m_status =  PENDING ;
+     IORequest(const IFileStream::Offset offset,const void* buffer, const size_t len):m_offset(offset),m_buffer(buffer), m_bufferLen(len) {
            m_bCompletionProcessed = false;
            m_transferedBytes = 0;
         }
@@ -34,7 +18,7 @@ class IORequest : public IRequest
 
 
         /** Get I/O operation offset value. */
-        IFileStream::Offset  GetOffset()
+        IFileStream::Offset  GetOffset() const
         {
             return m_offset;
         }
@@ -53,7 +37,7 @@ class IORequest : public IRequest
 
         /** Complete the request processing.*/
         void
-        Complete(IOResult ioResult,Status status = COMPLETED, size_t transferedBytes = 0);
+        Complete(Status status = Status::COMPLETED, size_t transferedBytes = 0);
 
         /* Wait on the operation to complete*/
 		virtual void Wait() override;
@@ -70,10 +54,10 @@ class IORequest : public IRequest
 
         /** Returns the current request Result
         */
-        IOResult
-        GetIOResult() const override
+        Status
+        GetIOStatus() const override
         {
-            return m_IOResult;
+            return m_status;
         }
 
 		const void*
@@ -92,11 +76,6 @@ protected:
               m_transferedBytes = transferedBytes;
         }
 
-        void SetIOResult(IOResult ioResult)
-        {
-            m_IOResult =  ioResult;
-        }
-
        virtual void HandleCompletion() PURE;
 
 protected:
@@ -109,19 +88,8 @@ protected:
         IFileStream::Offset m_offset;
 
         std::atomic<Status> m_status ;
-
-        /** Mutex for protecting state modifications. */
-        mutable std::mutex m_mutex;
-
-        /** Condition variable for request state changes. */
-		std::condition_variable m_condVar;
-
-        /**  I/O result of the operation. */
-        IOResult m_IOResult;
-
         /** Was the Complete() method invoked. */
         std::atomic<bool> m_bCompletionProcessed ;
-
         size_t m_transferedBytes;
 };
 

@@ -1,39 +1,14 @@
+
+#include<iostream>
 #include "FileStream.h"
-#include "WriteIORequest.h"
+
 #include "FileHandle.h"
+#include "FileMode.h"
 
-FileMode::FileMode(const std::string &mode_str)
+namespace FileAPI
 {
-    read = false;
-    write = false;
-    extended = false;
-	append = false;
 
-    /* The first character should specify read or write access. */
-    if (mode_str[0] == 'r') {
-        read = true;
-    } else if (mode_str[0] == 'w') {
-        write = true;
-    } 
-	else if (mode_str[0] == 'a') {
-		append = true;
-	}
-	else {
-        throw std::exception("Invalid access type, should be either 'r' or 'w'");
-    }
-    if (mode_str[1] == 0) {
-        return;
-    }
-    if (mode_str[1] == '+') {
-        extended = true;
-    }
-}
-
-const FileStream::Offset FileStream::OFFSET_NONE = -1;
-const FileStream::Offset FileStream::OFFSET_END = LLONG_MAX;
-
-FileStream::FileStream(const std::string &path, FileMode mode):
-    m_mode(mode),m_ptrFileHandle(new FileHandle(path,mode))
+FileStream::FileStream(const std::string &path, FileMode mode):m_ptrFileHandle(std::make_unique<FileHandle>(path,mode))
 {
    SetName(path);
    m_state = OPENED;
@@ -53,8 +28,6 @@ FileStream::GetName() const
 
 void FileStream::SetFileSize(size_t len)
 {
-	if (m_ptrFileHandle->GetWriteActivity() == true)
-		throw std::exception("Currently Write is under Progress for this stream");
 	m_ptrFileHandle->SetFileSize(len);
 }
 
@@ -64,7 +37,7 @@ FileStream::SetName(const std::string& new_name)
     m_szName = new_name;
 }
 
-FileStream::Offset
+Offset
 FileStream::Seek(Offset pos, bool is_relative)
 {
     Offset new_pos = m_currentPos;
@@ -80,40 +53,20 @@ FileStream::Seek(Offset pos, bool is_relative)
     return new_pos;
 }
 
-IRequest::Ptr
+std::future<IOStatus>
 FileStream::Write(const void *data, size_t len,
-                                    Offset offset,
-                                    WriteHandler completion_handler)
+                                    Offset offset)
 {
 
-    //std::cout<<"DEBUG:FileStream::Write \n";
-    if (offset == OFFSET_NONE)
-    {
-        if (m_ptrFileHandle->GetWriteActivity() == true)
-            throw std::exception("Currently Write is under Progress for this stream");
-        offset = m_currentPos;
-    }
-
-    WriteIORequest* rawWriterequest = new WriteIORequest(offset, data, len);
-
-    rawWriterequest->AddCompletionHandler([&](IOResult result, std::size_t length) {
-        if (result == OK) {
-            m_currentPos += length;
-        }
-    });
-
-    if (completion_handler)
-        rawWriterequest->AddCompletionHandler(completion_handler);
-
-    IRequest::Ptr writeRequest(rawWriterequest);
-    m_ptrFileHandle->Write(writeRequest);
-    
-    return writeRequest;
+    std::cout<<"DEBUG:FileStream::Write \n";
+    return m_ptrFileHandle->Write(offset,data, len);
 
 }
 
 void FileStream::WriteSync(const void *data, size_t len, Offset offset)
 {
-    IRequest::Ptr ioptr = Write(data,len,offset);
-    ioptr->Wait();
+    auto ioptr = Write(data,len,offset);
+    ioptr.wait();
+}
+
 }

@@ -1,5 +1,5 @@
 #pragma once
-#include "stdafx.h"
+#include<future>
 
 #ifdef BULKWRITE_EXPORTS
 #define BULKWRITE_API __declspec(dllexport)
@@ -7,75 +7,28 @@
 #define BULKWRITE_API __declspec(dllimport)
 #endif
 
-#ifndef PURE
-# define PURE	=0 //for pure virtual functions
-#endif
+#include "Definitions.h"
 
-#ifndef interface
-# define interface	struct //c,c++ does n't have keyword for interface
-#endif
+/** Request processing status */
 
-#define DEFAULT_DESTRUCTOR(type) virtual ~##type##() = default;
 
-/** Result of I/O operation. */
-enum  IOResult {
-
-    /** Operation completed successfully. */
-    OK,
-    /** Operation timed out. */
-    TIMED_OUT,
-    /** Operation canceled. */
-    CANCELED,
-    /** Bad address specific. It could not be understood and used. */
-    BAD_ADDRESS,
-    /** Remote side has explicitly refused the connection. */
-    CONNECTION_REFUSED,
-    /** Stream has been or is closed. All pending or new operations
-     * initiated for closed stream are completed with this result. */
-    CLOSED,
-    /** Insufficient permissions for the requested operation. */
-    PERMISSION_DENIED,
-    /** End of file encountered. */
-    END_OF_FILE,
-    /** File locking error. Possible double lock or unlock while not locked*/
-    LOCK_ERROR,
-    /** Some other system failure. If happened, it is recommended to
-     * investigate the root cause. */
-    OTHER_FAILURE
-};
-
+namespace FileAPI
+{
 
 interface BULKWRITE_API IRequest
 {
 
-    typedef std::shared_ptr<IRequest> Ptr;
-     /* Wait on the operation to complete*/
-    virtual void Wait() PURE;
-
-	/* Wait on the operation to complete for specified number of seconds
-	returns false if timeout expires
-	*/
-	virtual bool Wait(std::chrono::seconds seconds) PURE;
-    virtual IOResult  GetIOResult(void)const PURE;
-    virtual size_t GetTransferedBytes(void) const PURE ;
+    virtual Status  GetIOStatus(void)const PURE;
+    virtual size_t  GetTransferedBytes(void) const PURE ;
 
 	DEFAULT_DESTRUCTOR(IRequest)
 };
 
-
 interface BULKWRITE_API IFileStream 
 {
-     /* Offset for read/write operations*/
-    typedef __int64 Offset;
 
-	//reference counted shard ptr
-    typedef std::shared_ptr<IFileStream> Ptr;
-
-    /** Default prototype for write operation completion handler. */
-    using WriteHandler = void(*) (IOResult , size_t len);
-
-    virtual IRequest::Ptr
-    Write(const void *data, size_t len, Offset offset, WriteHandler completion_handler) PURE;
+    virtual std::future<IOStatus>
+    Write(const void *data, size_t len, Offset offset) PURE;
 
 	virtual void SetFileSize(size_t len) PURE;
 
@@ -104,5 +57,5 @@ interface BULKWRITE_API IFileProcessor
 	DEFAULT_DESTRUCTOR(IFileProcessor)
 };
 
-
-BULKWRITE_API std::unique_ptr<IFileProcessor>  CreateFileProcessor();
+}
+BULKWRITE_API std::unique_ptr<FileAPI::IFileProcessor>  CreateFileProcessor();

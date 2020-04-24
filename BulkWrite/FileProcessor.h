@@ -1,6 +1,9 @@
 #pragma once
 #include "interfaces.h"
 
+namespace FileAPI
+{
+
 class OverlappedIOController;
 class FileStream;
 class FileProcessor : public IFileProcessor
@@ -21,3 +24,5 @@ private:
 
     void RegisterStream(FileStream&);
 };
+
+}

@@ -145,24 +145,24 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Definitions.h" />
     <ClInclude Include="FileHandle.h" />
+    <ClInclude Include="FileMode.h" />
     <ClInclude Include="FileProcessor.h" />
     <ClInclude Include="FileStream.h" />
     <ClInclude Include="Interfaces.h" />
-    <ClInclude Include="IORequest.h" />
+    <ClInclude Include="Overlapped.h" />
     <ClInclude Include="OverlappedIOController.h" />
-    <ClInclude Include="ReadIORequest.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="Utils.h" />
-    <ClInclude Include="WriteIORequest.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="FileHandle.cpp" />
+    <ClCompile Include="FileMode.cpp" />
     <ClCompile Include="FileProcessor.cpp" />
     <ClCompile Include="FileStream.cpp" />
-    <ClCompile Include="IORequest.cpp" />
+    <ClCompile Include="Overlapped.cpp" />
     <ClCompile Include="OverlappedIOController.cpp" />
-    <ClCompile Include="ReadIORequest.cpp" />
     <ClCompile Include="Utils.cpp" />
     <ClCompile Include="dllmain.cpp">
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</CompileAsManaged>
@@ -178,7 +178,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
       </PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="WriteIORequest.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

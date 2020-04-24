@@ -1,4 +1,14 @@
 #pragma once
 
-IOResult MapError(DWORD error);
-std::string GetSystemError(void);
+#include<string>
+
+#include "Definitions.h"
+
+namespace FileAPI
+{
+
+    Status MapError(DWORD error);
+    std::string getLastSystemError();
+    std::string getErrorDescription(DWORD);
+
+}

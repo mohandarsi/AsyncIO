@@ -1,29 +1,13 @@
 #pragma once
-#include "interfaces.h"
+
+#include "Interfaces.h"
+
+namespace FileAPI
+{
+
 /** Stream class which represents opened file. */
 class FileHandle;
-
-class FileMode
-{
-public:
-    /** Read access. */
-    bool read:1,
-
-    /** Write access.*/
-		write:1,
-
-		/** Append.*/
-		append:1,
-
-            /** Extended access (corresponds to "+" in opening mode string.)*/
-         extended:1;
-
-    /*Parses the mode */
-     FileMode(const std::string &mode_str);
-    ~FileMode(void){}
-};
-
-
+class FileMode;
 
 
 class FileStream : public IFileStream
@@ -42,7 +26,7 @@ public:
 
     
     /** Default prototype for read operation completion handler. */
-     typedef   void   (*ReadHandler) (void*,IOResult);
+     typedef   void   (*ReadHandler) (void*,Status);
 
     /** Default prototype for close operation completion handler. */
     //typedef   void    (*CloseHandler) (void );
@@ -92,8 +76,8 @@ public:
      Seek(Offset pos, bool is_relative = false);
 
     /** Initiate write operation.*/
-    IRequest::Ptr 
-    Write(const void *data, size_t len, Offset offset=OFFSET_NONE, WriteHandler completion_handler=NULL) override;
+    virtual std::future<IOStatus>
+    Write(const void *data, size_t len, Offset offset=OFFSET_NONE) override;
     
     void WriteSync(const void *data, size_t len, Offset offset=OFFSET_NONE);
 
@@ -115,9 +99,7 @@ private:
     /** Human readable stream name. */
     std::string m_szName;
 
-     /** Opening mode. */
-    FileMode m_mode;
-    
+   
     /** Current position in file when maintained by stream. */
     Offset m_currentPos;
 
@@ -125,3 +107,5 @@ private:
     std::unique_ptr<FileHandle> m_ptrFileHandle;
 
 };
+
+}

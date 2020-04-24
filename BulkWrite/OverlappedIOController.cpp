@@ -1,10 +1,19 @@
 #pragma once
 
-#include "FileStream.h"
-#include "IORequest.h"
+#include <Windows.h>
+#include<iostream>
+#include<string>
+
+
+#include "OverlappedIOController.h"
+
 #include "FileHandle.h"
 #include "Utils.h"
-#include "OverlappedIOController.h"
+
+#include "Overlapped.h"
+
+namespace FileAPI
+{
 
 #define CK_STOP 0
 
@@ -45,8 +54,7 @@ OverlappedIOController::Disable()
         /* Signal dispatcher to exit. */
         if (0 == ::PostQueuedCompletionStatus(m_hCompletionPort.get(), 0, CK_STOP, 0))
         {
-            const std::string error = GetSystemError();
-            std::cout << "PostQueuedCompletionStatus Error: " << error.c_str() << std::endl;
+            std::cout << "PostQueuedCompletionStatus Error: " << getLastSystemError() << std::endl;
         }
     }
 
@@ -60,21 +68,13 @@ OverlappedIOController::Disable()
 }
 
 void
-OverlappedIOController::RegisterHandle(
-    FileHandle &fileHandle)
+OverlappedIOController::RegisterHandle(FileHandle &fileHandle)
 {
     if (!CreateIoCompletionPort(fileHandle.m_hFileHandle.get(), m_hCompletionPort.get(),
                                 reinterpret_cast<ULONG_PTR>(&fileHandle), 0)) 
     {
 
           throw std::exception("Failed to attach handle to I/O completion port");
-    }
-
-    if (fileHandle.m_hFileWriteHandle != INVALID_HANDLE_VALUE &&
-        !CreateIoCompletionPort(fileHandle.m_hFileHandle.get(), m_hCompletionPort.get(),
-                                reinterpret_cast<ULONG_PTR>(&fileHandle), 0)) {
-
-        throw std::exception("Failed to attach handle to I/O completion port");
     }
 }
 
@@ -99,14 +99,12 @@ OverlappedIOController::DispatcherThread()
         
         ::SetLastError(0);
         
-
         BOOL ok = ::GetQueuedCompletionStatus(m_hCompletionPort.get(), &bytes_transferred,
             &completion_key, &io_cb, INFINITE);
 
         if (!ok)
         {
-            std::string error = GetSystemError();
-            std::cout << "Error in Processing :" << error.c_str() << "\n";
+            std::cout << "Error in Processing :" << getLastSystemError() << "\n";
             throw;
         }
 
@@ -120,11 +118,10 @@ OverlappedIOController::DispatcherThread()
         {
             if (completion_key)
             {
-                //std::cout << "DEBUG:OverlappedIOController::DispatcherThread in Queue: Transfer size :" << bytes_transferred << "\n";
+                std::cout << "DEBUG:OverlappedIOController::DispatcherThread in Queue: Transfer size :" << bytes_transferred << "\n";
                 //auto start = std::chrono::high_resolution_clock::now();
                 
-                reinterpret_cast<FileHandle *>(completion_key)->
-                    IOCompleteCallback(io_cb, bytes_transferred, error);
+                Overlapped::callback(::GetLastError(), bytes_transferred, io_cb);
 
                 //auto end = std::chrono::high_resolution_clock::now();
 
@@ -137,4 +134,6 @@ OverlappedIOController::DispatcherThread()
             throw;
         }
     }
+}
+
 }

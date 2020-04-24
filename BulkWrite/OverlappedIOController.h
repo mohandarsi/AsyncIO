@@ -1,5 +1,12 @@
 
 #include<deque>
+#include<memory>
+#include<thread>
+
+namespace FileAPI
+{
+
+class FileHandle;
 
 /** Windows I/O controller. */
 class OverlappedIOController {
@@ -40,3 +47,5 @@ private:
     void
     DispatcherThread();
 };
+
+}
