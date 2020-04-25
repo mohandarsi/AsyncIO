@@ -50,7 +50,7 @@ int main()
 	
 	size_t imageSize = GetBulkSize(resolution, bits);
 
-    std::unique_ptr<void> data(new char[imageSize]);
+    std::unique_ptr<char> data(new char[imageSize]);
 	
 	std::string filename("c:\\temp\\Image.data");
 	auto filestream = file->Open(filename, "w+");
