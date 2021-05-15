@@ -74,10 +74,11 @@ FileHandle::write(const Offset fileOffset, const void* buffer, const size_t numb
     auto overlapped = std::make_shared<std::unique_ptr<Overlapped>>(new Overlapped(m_fileHandle));
 
     auto& statusPromise = overlapped->get()->status;
+    auto statusFuture = statusPromise.get_future();
 
     if (buffer == nullptr || numberOfBytesToWrite <= 0) {
         statusPromise.set_value({ Status::OTHER_FAILURE,0 });
-        return statusPromise.get_future();
+        return statusFuture;
     }
 
     if (fileOffset != OFFSET_NONE) {
@@ -85,7 +86,7 @@ FileHandle::write(const Offset fileOffset, const void* buffer, const size_t numb
         (*overlapped)->OffsetHigh = static_cast<DWORD>(fileOffset >> 32);
     }
 
-    m_logger.debug("Write {0} enter with buffer {1} and size {2} at offset {3}", m_fileHandle.get(), buffer, numberOfBytesToWrite, (*overlapped)->Offset);
+    m_logger.debug("Write {0} enter with buffer {1} and size {2} at offset {3}", m_fileHandle.get(), buffer, numberOfBytesToWrite, fileOffset);
 
     DWORD numberOfBytesWritten = 0;
     ::WriteFile(m_fileHandle.get(),buffer, static_cast<DWORD>(numberOfBytesToWrite), &numberOfBytesWritten,overlapped->get());
@@ -104,7 +105,7 @@ FileHandle::write(const Offset fileOffset, const void* buffer, const size_t numb
         m_logger.error("WriteFileEx failed with error {0} for handle {1}", getErrorDescription(error), m_fileHandle.get());
     }
 
-    return statusPromise.get_future();
+    return statusFuture;
 }
 
 std::future<IOStatus>
@@ -113,10 +114,11 @@ FileHandle::read(Offset fileOffset, void* buffer, size_t numberOfBytesToRead) co
     auto overlapped = std::make_shared<std::unique_ptr<Overlapped>>(new Overlapped(m_fileHandle));
 
     auto& statusPromise = overlapped->get()->status;
+    auto statusFuture = statusPromise.get_future();
 
     if (buffer == nullptr || numberOfBytesToRead <= 0) {
         statusPromise.set_value({ Status::OTHER_FAILURE,0 });
-        return statusPromise.get_future();
+        return statusFuture;
     }
 
     if (fileOffset != OFFSET_NONE) {
@@ -124,10 +126,12 @@ FileHandle::read(Offset fileOffset, void* buffer, size_t numberOfBytesToRead) co
         (*overlapped)->OffsetHigh = static_cast<DWORD>(fileOffset >> 32);
     }
 
-    m_logger.debug("read {0} enter with buffer {1} and size {2} at offset {3}", m_fileHandle.get(), buffer, numberOfBytesToRead, (*overlapped)->Offset);
+    m_logger.debug("read {0} enter with buffer {1} and size {2} at offset {3}", m_fileHandle.get(), buffer, numberOfBytesToRead, fileOffset);
 
     DWORD numberOfBytesRead = 0;
-    ::ReadFile(m_fileHandle.get(), buffer, static_cast<DWORD>(numberOfBytesToRead), &numberOfBytesRead, overlapped->get());
+    auto result = ::ReadFile(m_fileHandle.get(), buffer, static_cast<DWORD>(numberOfBytesToRead), &numberOfBytesRead, overlapped->get());
+
+    if (result) return statusFuture;
 
     const auto error = ::GetLastError();
 
@@ -138,11 +142,11 @@ FileHandle::read(Offset fileOffset, void* buffer, size_t numberOfBytesToRead) co
         overlapped->release();
         break;
     default:
+        m_logger.error("ReadFile failed with error {0} for handle {1}", getErrorDescription(error), m_fileHandle.get());
         statusPromise.set_value({ MapError(error),numberOfBytesRead });
-        m_logger.error("WriteFileEx failed with error {0} for handle {1}", getErrorDescription(error), m_fileHandle.get());
     }
 
-    return statusPromise.get_future();
+    return statusFuture;
 }
 
 HANDLE FileHandle::createFile(const std::string &path, const FileMode& mode) const

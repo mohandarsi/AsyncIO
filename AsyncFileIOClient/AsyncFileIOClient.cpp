@@ -1,6 +1,3 @@
-// BulkWriteClient.cpp : Defines the entry point for the console application.
-//
-
 #include <iostream>
 #include <chrono>
 #include <random>
@@ -57,11 +54,18 @@ int main()
     auto start = chrono::high_resolution_clock::now();
     while (i<noImages) 
     {
+        auto startA = chrono::high_resolution_clock::now();
         auto writeRequest = fileStream->write(&image1[0], imageSizeInBytes, OFFSET_NONE);
         writeRequest.wait();
-        auto writeIOStatus = writeRequest.get();
+        auto& writeIOStatus = writeRequest.get();
+
         if (writeIOStatus.status != Status::OK || (writeIOStatus.transferedBytes != imageSizeInBytes))
             std::cout << "ERROR in Write at " << i << std::endl;
+
+        auto endA = chrono::high_resolution_clock::now();
+        const auto writeMs = chrono::duration_cast<chrono::milliseconds>(endA - startA);
+        std::cout << "Write took: " << i << " " << writeMs.count() << " ms" << std::endl;
+
         fileStream->seek(writeIOStatus.transferedBytes, RelativePosition::CURRENT);
         ++i;
     }
@@ -75,11 +79,17 @@ int main()
     while (i < noImages)
     {
         Image image2(SIZE*NOPIXELS);
+        auto startA = chrono::high_resolution_clock::now();
         auto readRequest = fileStream->read(&image2[0], imageSizeInBytes, OFFSET_NONE);
         readRequest.wait();
-        auto readIOStatus = readRequest.get();
+        auto& readIOStatus = readRequest.get();
+        auto endA = chrono::high_resolution_clock::now();
+        const auto readms = chrono::duration_cast<chrono::milliseconds>(endA - startA);
+
         if (readIOStatus.status != Status::OK || (image1 != image2) || (readIOStatus.transferedBytes != imageSizeInBytes))
             std::cout << "ERROR in read at "<< i << std::endl;
+        std::cout << "Read took: " << i << " " << readms.count() << " ms" << std::endl;
+
         fileStream->seek(readIOStatus.transferedBytes, RelativePosition::CURRENT);
         ++i;
     }

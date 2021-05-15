@@ -46,10 +46,10 @@ void OverlappedIOController::disable()
 {
 
     // Signal dispatcher to exit.
-    std::stringstream ss; ss << "posting STOP message to the ALL dispatcher threads";
+    m_logger.info("posting STOP message to the ALL dispatcher threads");
     for (auto& dispatcherThread : m_dispatcherThreads)
     {
-        m_logger.info(ss.str());
+        
         if (0 == ::PostQueuedCompletionStatus(m_hCompletionPort.get(), 0, DISPATCHER_STOP, 0))
         {
             m_logger.error("PostQueuedCompletionStatus failed with error {0} for handle {1}", getLastSystemError(), m_hCompletionPort.get());
@@ -76,7 +76,7 @@ void OverlappedIOController::registerHandle(FileHandle &handle) const
     }
 }
 
-void OverlappedIOController::unregisterHandle( FileHandle &handle)
+void OverlappedIOController::unregisterHandle(FileHandle&/*handle*/)
 {
     /* No special actions required - completion port tracks handles references. */
 }

@@ -19,6 +19,9 @@ Overlapped::Overlapped(std::weak_ptr<void> handle)
 Overlapped::~Overlapped()
 {
     SPDLOG_TRACE("~Overlapped");
+    fileHandle.reset();
+
+    
 }
 
 VOID CALLBACK Overlapped::callback(const DWORD errorCode, const DWORD numberOfBytesTransferred, const LPOVERLAPPED lpOverlapped)
@@ -26,7 +29,9 @@ VOID CALLBACK Overlapped::callback(const DWORD errorCode, const DWORD numberOfBy
     std::unique_ptr<Overlapped> overlapped(static_cast<Overlapped*>(lpOverlapped));
 
     const auto handle = overlapped->fileHandle.lock();
-    SPDLOG_TRACE("Handle {} and overlapped operation completed with result  {} and bytes transferred {}",handle, getErrorDescription(dwErrorCode), numberOfBytesTransferred);
+    SPDLOG_TRACE("Handle {} and overlapped operation completed with result  {} and bytes transferred {}",handle, 
+        getErrorDescription(dwErrorCode), numberOfBytesTransferred);
+
     overlapped->status.set_value({ MapError(errorCode),numberOfBytesTransferred });
 }
 

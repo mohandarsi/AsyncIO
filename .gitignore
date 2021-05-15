@@ -3,6 +3,7 @@
 *.opendb
 *.user
 *.suo
+.vs/
 /AsyncFileIO/Debug/
 /AsyncFileIOClient/Debug/
 /AsyncFileIO/x64/
