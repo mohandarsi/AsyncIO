@@ -2,3 +2,5 @@
 *.db
 *.opendb
 BulkWrite/.vs/BulkWrite/v14/.suo
+/.vs/BulkWrite/v14/.suo
+/BulkWrite/BulkWrite.vcxproj.user
