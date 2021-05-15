@@ -8,7 +8,7 @@ Provides **asynchronous** mechanism to **read** / **write** files by using [Wind
 
 ## Build
 
-Uses Visual stuido 2015 or above  
+Use Visual stuido 2015 or above (tested with 2015 and 2019)
 Install [vcpkg](https://vcpkg.io/en/getting-started.html)  
 Install dependent packages (logging packages)
 
@@ -47,4 +47,4 @@ filestream.reset();
 
 
 Example program can be look at 
-[BulkWriteClient](https://github.com/mohandarsi/FastBulk/tree/master/AsyncFileIOClient)
+[AsyncFileIOClient](https://github.com/mohandarsi/FastBulk/tree/master/AsyncFileIOClient)
