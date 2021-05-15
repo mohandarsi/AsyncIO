@@ -1,44 +1,46 @@
+
+#include "spdlog/spdlog.h"
+
 #include "FileProcessor.h"
+#include "FileMode.h"
 #include "FileStream.h"
 #include "FileHandle.h"
 #include "OverlappedIOController.h"
-#include "FileMode.h"
 
-
-std::unique_ptr<FileAPI::IFileProcessor> CreateFileProcessor()
-{
-    return std::make_unique<FileAPI::FileProcessor>();
-}
 
 namespace FileAPI
 {
 
-FileProcessor::FileProcessor(void):
-         m_ptrIOcontroller(std::make_unique<OverlappedIOController>())
+FileProcessor::FileProcessor(spdlog::logger& log)
+    : m_logger(log)
+    , m_iocontroller(std::make_unique<OverlappedIOController>(log))
 {
+    m_logger.trace("FileProcessor");
 }
 
-FileProcessor::~FileProcessor(void)
+FileProcessor::~FileProcessor()
 {
-	m_ptrIOcontroller->Disable();
+    m_logger.trace("~FileProcessor");
+    m_iocontroller->disable();
 }
-void FileProcessor::Enable()
+void FileProcessor::enable()
 {
-     m_ptrIOcontroller->Enable();
+    m_logger.trace("Enable");
+    m_iocontroller->enable();
 }
 
 std::unique_ptr<IFileStream>
-FileProcessor::Open(const std::string &name, const std::string &mode)
+FileProcessor::open(const std::string &name, const std::string &mode)
 {
-	auto fileStream = new FileStream(name, mode);
-    RegisterStream(*fileStream);
-	return std::unique_ptr<IFileStream>(fileStream);
+    auto* fileStream = new FileStream(m_logger,name, FileMode(mode));
+    registerStream(*fileStream);
+    return std::unique_ptr<IFileStream>(fileStream);
 }
 
 void
-FileProcessor::RegisterStream(FileStream& stream)
+FileProcessor::registerStream(FileStream& stream) const
 {
-    m_ptrIOcontroller->RegisterHandle(*stream.m_ptrFileHandle.get());
+    m_iocontroller->registerHandle(*stream.m_ptrFileHandle.get());
 }
 
 }

@@ -3,7 +3,7 @@
 namespace FileAPI
 {
 
-FileMode::FileMode(const std::string &mode_str)
+FileMode::FileMode(const std::string& mode)
 {
     read = false;
     write = false;
@@ -11,22 +11,22 @@ FileMode::FileMode(const std::string &mode_str)
     append = false;
 
     /* The first character should specify read or write access. */
-    if (mode_str[0] == 'r') {
+    if (mode[0] == 'r') {
         read = true;
     }
-    else if (mode_str[0] == 'w') {
+    else if (mode[0] == 'w') {
         write = true;
     }
-    else if (mode_str[0] == 'a') {
+    else if (mode[0] == 'a') {
         append = true;
     }
     else {
         throw std::exception("Invalid access type, should be either 'r' or 'w'");
     }
-    if (mode_str[1] == 0) {
+    if (mode[1] == 0) {
         return;
     }
-    if (mode_str[1] == '+') {
+    if (mode[1] == '+') {
         extended = true;
     }
 }

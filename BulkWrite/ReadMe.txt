@@ -4,22 +4,33 @@
 
 Usage:-
 
-//create data
- #define MAX_SIZE	  (2 * 1024 * 1024)
- static BYTE arr[MAX_SIZE];			
- memset(arr, 1, sizeof(image_arr));
-  
+//create an sample buffer which need to be written
+std::vector<unsigned char> image(2048*2048);
+fillWithRandomValues(image);
+
+//initialize file overlapped processor & create an file
+auto fileProcessor(CreateFileProcessor(*logger));
+fileProcessor->enable();
+
 //open file with write
 std::string filename("c:\\Image.data");
-IFileStream::Ptr filestream = file->Open(filename, "w+");
+auto filestream = fileProcessor->Open(filename, "w+");
 
-//write on the stream
-auto ioRequestPtr = filestream->Write(image_arr,sizeof(arr),-1,nullptr);
+//initite async write request
+auto writeRequest = fileStream->write(&image[0], image.size(), OFFSET_NONE);
+//OFFSET_NONE indicates to read or write operations to consider offset as current file position.
 
-//wait on the request to complete
-ioRequestPtr->Wait();
+//wait for request to get complete and check status
+writeRequest.wait();
+auto writeIOStatus = writeRequest.get();
+assert(writeIOStatus.status == Status::OK && writeIOStatus.transferedBytes == image.size())
 
-TODO: Implelemention of Read yet to be supported.
+fileStream->seek(0); // reset to start of the file.
+Image image2(SIZE*NOPIXELS);
+auto readRequest = fileStream->read(&image2[0], image2.size(), OFFSET_NONE);
+readRequest.wait();
+auto readIOStatus = readRequest.get();
+if (readIOStatus.status != Status::OK || readIOStatus.transferedBytes == image2.size())
 
 
 BulkWrite.vcxproj

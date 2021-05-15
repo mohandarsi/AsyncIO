@@ -1,15 +1,5 @@
 #pragma once
 
-#ifndef PURE
-# define PURE	=0 //for pure virtual functions
-#endif
-
-#ifndef interface
-# define interface	struct //c,c++ does n't have keyword for interface
-#endif
-
-#define DEFAULT_DESTRUCTOR(type) virtual ~##type##() = default;
-
 namespace FileAPI
 {
 
@@ -18,7 +8,6 @@ typedef __int64 Offset;
 
 const Offset OFFSET_NONE = -1;
 const Offset OFFSET_END = LLONG_MAX;
-
 
 enum class Status {
     /** Operation completed successfully. */

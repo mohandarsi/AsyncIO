@@ -150,6 +150,8 @@
     <ClInclude Include="FileMode.h" />
     <ClInclude Include="FileProcessor.h" />
     <ClInclude Include="FileStream.h" />
+    <ClInclude Include="IFileProcessor.h" />
+    <ClInclude Include="IFileStream.h" />
     <ClInclude Include="Interfaces.h" />
     <ClInclude Include="Overlapped.h" />
     <ClInclude Include="OverlappedIOController.h" />
@@ -161,6 +163,7 @@
     <ClCompile Include="FileMode.cpp" />
     <ClCompile Include="FileProcessor.cpp" />
     <ClCompile Include="FileStream.cpp" />
+    <ClCompile Include="Interfaces.cpp" />
     <ClCompile Include="Overlapped.cpp" />
     <ClCompile Include="OverlappedIOController.cpp" />
     <ClCompile Include="Utils.cpp" />

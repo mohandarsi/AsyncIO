@@ -1,8 +1,11 @@
 #pragma once
 
 #include<future>
-
 #include "Definitions.h"
+
+namespace spdlog {
+    class logger;
+}
 
 namespace FileAPI
 {
@@ -10,40 +13,33 @@ namespace FileAPI
 class FileMode;
 
 class FileHandle {
+
 public:
 
-    /** Construct an instance by opening a file specified by path. */
-    FileHandle(
-    		const std::string &path,
-    		const FileMode& mode);
+    FileHandle(spdlog::logger& log, const std::string &path, const FileMode& mode);
 
-    /** Closes handles on destruction. */
-    virtual
-    ~FileHandle();
+    virtual  ~FileHandle();
 
-	virtual void SetFileSize(size_t size);
+    virtual void setFileSize(size_t size);
 
-    /** Schedule write operation based on current write request. */
-    std::future<IOStatus>  Write(const Offset offset, const void* buffer, const size_t len) ;
-	
-    bool 
-        IsClosed() { return m_bclosed;}
+    std::future<IOStatus>  write(Offset offset, const void* buffer, size_t numberOfBytesToWrite) const;
+    std::future<IOStatus>  read(Offset offset, void* buffer, size_t numberOfBytesToRead) const;
+    
+    bool isClosed() const { return m_closed;}
 
 private:
 
-    /** Close the handle. */
-	void  Close();
+    void close();
+    HANDLE createFile(const std::string &path, const FileMode& mode) const;
 
 private:
-  
+    spdlog::logger& m_logger;
 
     friend class OverlappedIOController;
 
-    /** Opened file handle for reading/writing. */
-    std::shared_ptr<void> m_hFileHandle;
+    std::shared_ptr<void> m_fileHandle;
 
-    /** Is the handle already closed. */
-    bool m_bclosed;
+    bool m_closed;
 
 };
 

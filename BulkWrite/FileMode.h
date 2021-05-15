@@ -20,8 +20,8 @@ public:
         extended : 1;
 
     /*Parses the mode */
-    FileMode(const std::string &mode_str);
-    ~FileMode(void) {}
+    explicit FileMode(const std::string& mode);
+    ~FileMode() = default;
 };
 
 }

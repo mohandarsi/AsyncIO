@@ -1,51 +1,46 @@
+#pragma once
 
 #include<deque>
 #include<memory>
 #include<thread>
+
+#include "spdlog/spdlog.h"
 
 namespace FileAPI
 {
 
 class FileHandle;
 
-/** Windows I/O controller. */
-class OverlappedIOController {
-public:
-    OverlappedIOController();
+class OverlappedIOController
+{
 
-    virtual
+public:
+    explicit OverlappedIOController(spdlog::logger& log);
+
     ~OverlappedIOController();
 
-    /** Enable the controller. */
-    virtual void
-    Enable();
+    void  enable();
 
-    /** Disable the controller. */
-    virtual void
-    Disable() ;
+    void  disable();
 
-    /** Register new opened file handle. */
-    virtual void
-    RegisterHandle(FileHandle &handle) ;
+    void  registerHandle(FileHandle &handle) const;
 
-    /** Unregister previously registered file handle. */
-    virtual void
-    UnregisterHandle(FileHandle &handle) ;
+    void  unregisterHandle(FileHandle &handle);
 
 private:
+    void  dispatcherThread();
+
+private:
+    spdlog::logger& m_logger;
+
     /** Completion port handle for all file handles. */
     std::shared_ptr<void> m_hCompletionPort;
    
-	typedef std::deque<std::thread> Threads;
+    using threads = std::deque<std::thread>;
 
-	/** Dispatcher thread for I/O completion events dispatching. */
-	Threads m_dispatcherThreads;
-   
-  //  std::thread m_dispatcherThread;
+    /** Dispatcher thread for I/O completion events dispatching. */
+    threads m_dispatcherThreads;
 
-    /** Dispatcher thread function. */
-    void
-    DispatcherThread();
 };
 
 }

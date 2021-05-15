@@ -1,31 +1,27 @@
-#include<iostream>
-
-
 #include "windows.h"
 
+#include<iostream>
 #include "Utils.h"
 #include "Overlapped.h"
-
+#include "spdlog/spdlog.h"
 
 namespace FileAPI
 {
 
-Overlapped::Overlapped() { 
+Overlapped::Overlapped()
+{ 
     std::memset(static_cast<OVERLAPPED *>(this), 0, sizeof(OVERLAPPED)); 
 }
-Overlapped::~Overlapped() {
-    std::cout << " ~Overlapped()";
-}
-VOID CALLBACK Overlapped::callback(DWORD dwErrorCode, DWORD dwNumberOfBytesTransfered, LPOVERLAPPED lpOverlapped)
-{
-    std::unique_ptr<Overlapped> overlapped(
-        static_cast<Overlapped *>(lpOverlapped));
 
-    if (auto handle = overlapped->handle.lock())
+VOID CALLBACK Overlapped::callback(const DWORD errorCode, const DWORD numberOfBytesTransferred, const LPOVERLAPPED lpOverlapped)
+{
+    std::unique_ptr<Overlapped> overlapped(static_cast<Overlapped*>(lpOverlapped));
+
+    if (const auto handle = overlapped->handle.lock())
     {
-        std::cout << "Handle " << handle << ": Result :" << getErrorDescription(dwErrorCode);
+          SPDLOG_TRACE("Handle {} and overlapped operation completed with result  {} and bytes transferred {}",handle, getErrorDescription(dwErrorCode), numberOfBytesTransferred);
     }
-    overlapped->status.set_value({ MapError(dwErrorCode),dwNumberOfBytesTransfered });
+    overlapped->status.set_value({ MapError(errorCode),numberOfBytesTransferred });
 }
 
 }

@@ -1,26 +1,20 @@
-#pragma once
 
-#include <Windows.h>
-#include<iostream>
-#include<string>
-
-
+#include <sstream>
 #include "OverlappedIOController.h"
-
 #include "FileHandle.h"
 #include "Utils.h"
-
 #include "Overlapped.h"
 
 namespace FileAPI
 {
 
-#define CK_STOP 0
+#define DISPATCHER_STOP (0)
 
-OverlappedIOController::OverlappedIOController()
+OverlappedIOController::OverlappedIOController(spdlog::logger& log)
+    : m_logger(log)
 {
-   const auto hCompletionPort = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0);
-   if (!hCompletionPort) {
+    auto* const hCompletionPort = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 0);
+    if (!hCompletionPort) {
         throw std::exception("Failed to create I/O completion port");
     }
     m_hCompletionPort = std::shared_ptr<void>(hCompletionPort,CloseHandle);
@@ -28,112 +22,111 @@ OverlappedIOController::OverlappedIOController()
 
 OverlappedIOController::~OverlappedIOController()
 {
-    Disable();
+    disable();
 }
 
-void
-OverlappedIOController::Enable()
+void OverlappedIOController::enable()
 {
-    if (m_dispatcherThreads.size() <= 0) {
+    if (m_dispatcherThreads.empty()) 
+    {
+        const auto concurrentThreads = std::thread::hardware_concurrency();
 
-        int concurrentThreads = std::thread::hardware_concurrency();
         m_dispatcherThreads.resize(concurrentThreads);
-        for (size_t i = 0; i < m_dispatcherThreads.size(); ++i)
+
+        m_logger.info("HardWare concurrency {}", concurrentThreads);
+
+        for (auto& dispatcherThread : m_dispatcherThreads)
         {
-            m_dispatcherThreads[i] = std::thread(&OverlappedIOController::DispatcherThread,
-                this);
+            dispatcherThread = std::thread(&OverlappedIOController::dispatcherThread, this);
         }
     }
 }
 
-void
-OverlappedIOController::Disable()
+void OverlappedIOController::disable()
 {
-    for (Threads::const_iterator it = m_dispatcherThreads.begin(), end = m_dispatcherThreads.end(); it != end; ++it)
+
+    // Signal dispatcher to exit.
+    std::stringstream ss; ss << "posting STOP message to the ALL dispatcher threads";
+    for (auto& dispatcherThread : m_dispatcherThreads)
     {
-        /* Signal dispatcher to exit. */
-        if (0 == ::PostQueuedCompletionStatus(m_hCompletionPort.get(), 0, CK_STOP, 0))
+        m_logger.info(ss.str());
+        if (0 == ::PostQueuedCompletionStatus(m_hCompletionPort.get(), 0, DISPATCHER_STOP, 0))
         {
-            std::cout << "PostQueuedCompletionStatus Error: " << getLastSystemError() << std::endl;
+            m_logger.error("PostQueuedCompletionStatus failed with error {0} for handle {1}", getLastSystemError(), m_hCompletionPort.get());
         }
     }
 
-    for (auto it = m_dispatcherThreads.begin(), end = m_dispatcherThreads.end(); it != end; ++it)
+    for (auto& dispatcherThread : m_dispatcherThreads)
     {
-        /* wait for the thread to exit. */
-        (*it).join();
+        std::stringstream ss; ss << "waiting for a thread " << dispatcherThread.get_id() << " to stop";
+        m_logger.info(ss.str());
+        dispatcherThread.join();
     }
 
     m_dispatcherThreads.clear();
 }
 
-void
-OverlappedIOController::RegisterHandle(FileHandle &fileHandle)
+void OverlappedIOController::registerHandle(FileHandle &handle) const
 {
-    if (!CreateIoCompletionPort(fileHandle.m_hFileHandle.get(), m_hCompletionPort.get(),
-                                reinterpret_cast<ULONG_PTR>(&fileHandle), 0)) 
+    if (!CreateIoCompletionPort(handle.m_fileHandle.get(), m_hCompletionPort.get(),
+                                reinterpret_cast<ULONG_PTR>(&handle), 0)) 
     {
 
           throw std::exception("Failed to attach handle to I/O completion port");
     }
 }
 
-void
-OverlappedIOController::UnregisterHandle(
-    FileHandle &handle)
+void OverlappedIOController::unregisterHandle( FileHandle &handle)
 {
     /* No special actions required - completion port tracks handles references. */
 }
 
-void
-OverlappedIOController::DispatcherThread()
+void OverlappedIOController::dispatcherThread()
 {
-    std::cout<<"DEBUG:OverlappedIOController::DispatcherThread  \n";
-    while (true) {
+    m_logger.trace("dispatcherThread started");
 
+    while (true) 
+    {
         // Get the next operation from the queue.
-        DWORD bytes_transferred = 0;
-        ULONG_PTR completion_key = 0;
-        LPOVERLAPPED io_cb = 0;
-        DWORD error = 0;
-        
+        DWORD bytesTransferred = 0;
+        ULONG_PTR completionKey = 0;
+        LPOVERLAPPED ioCb = nullptr;
+
         ::SetLastError(0);
-        
-        BOOL ok = ::GetQueuedCompletionStatus(m_hCompletionPort.get(), &bytes_transferred,
-            &completion_key, &io_cb, INFINITE);
+
+        const auto ok = ::GetQueuedCompletionStatus(m_hCompletionPort.get(), &bytesTransferred,
+                                                    &completionKey, &ioCb, INFINITE);
 
         if (!ok)
         {
-            std::cout << "Error in Processing :" << getLastSystemError() << "\n";
+            m_logger.error("GetQueuedCompletionStatus failed with error {0} for handle {1}", getLastSystemError(), m_hCompletionPort.get());
             throw;
         }
 
-        if (completion_key == CK_STOP)
+        if (completionKey == DISPATCHER_STOP)
         {
-            std::cout << "OverlappedIOController::DispatcherThread Received STOP \n";
-            break;
+           m_logger.info("DispatcherThread Received STOP signal");
+           break;
         }
 
-        else if (io_cb)
+        if(!ioCb)
         {
-            if (completion_key)
-            {
-                std::cout << "DEBUG:OverlappedIOController::DispatcherThread in Queue: Transfer size :" << bytes_transferred << "\n";
-                //auto start = std::chrono::high_resolution_clock::now();
-                
-                Overlapped::callback(::GetLastError(), bytes_transferred, io_cb);
-
-                //auto end = std::chrono::high_resolution_clock::now();
-
-                //auto milli = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-            }
-        }
-        else
-        {
-            std::cout << "ERROR:OverlappedIOController::DispatcherThread Unknown Queue Status \n";
+            m_logger.error("GetQueuedCompletionStatus overlapped result is null");
             throw;
         }
+
+
+        if (completionKey)
+        {
+
+            m_logger.debug("OVERLAPPED IO number of bytes transferred {}", bytesTransferred);
+
+            Overlapped::callback(::GetLastError(), bytesTransferred, ioCb);
+        }
+        
     }
+
+    m_logger.trace("dispatcherThread stopped");
 }
 
 }

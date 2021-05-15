@@ -1,6 +1,10 @@
 #pragma once
 
-#include "Interfaces.h"
+#include "IFileStream.h"
+
+namespace spdlog {
+    class logger;
+}
 
 namespace FileAPI
 {
@@ -9,21 +13,9 @@ namespace FileAPI
 class FileHandle;
 class FileMode;
 
-
 class FileStream : public IFileStream
 {
 public:
-    
-    /* Offset special value which indicates that the offset value is
-     * not specified.
-     */
-    static const Offset OFFSET_NONE;
-
-    /* Offset special value which indicates that the offset value
-     * corresponds to the stream end .
-     */
-    static const Offset OFFSET_END;
-
     
     /** Default prototype for read operation completion handler. */
      typedef   void   (*ReadHandler) (void*,Status);
@@ -32,7 +24,7 @@ public:
     //typedef   void    (*CloseHandler) (void );
 
     /** Stream states. */
-    enum  FileState {
+    enum  class FileState {
         /** Stream is closed. Also initial state. */
         CLOSED,
         /** Stream is being opened and is not yet ready for reading/writing.
@@ -46,51 +38,39 @@ public:
     };
 
 public:
-    FileStream(const std::string &path, FileMode mode);
-    ~FileStream(void);
+    FileStream(spdlog::logger& log, const std::string &path, const FileMode& mode);
+    virtual ~FileStream();
 
-        /** Get current state of the stream. */
-    FileState
-    GetState() const
+    FileState getState() const
     {
         return m_state;
     }
 
-    /** Checks if stream is closed or not. */
-    bool
-    IsClosed() const
+    bool isClosed() const
     {
-        return (m_state == CLOSED);
+        return (m_state == FileState::CLOSED);
     }
 
-    /** Set the stream name. */
-    void
-    SetName(const std::string&);
+    void setName(const std::string&);
 
-     /** Get human readable stream name. */
-    std::string
-    GetName() const;
+    std::string  getName() const;
 
-     /** Set new current position for the stream.*/
-    Offset
-     Seek(Offset pos, bool is_relative = false);
-
-    /** Initiate write operation.*/
-    virtual std::future<IOStatus>
-    Write(const void *data, size_t len, Offset offset=OFFSET_NONE) override;
+    std::future<IOStatus>
+    write(const void *data, size_t length, Offset offset=OFFSET_NONE) override;
     
-    void WriteSync(const void *data, size_t len, Offset offset=OFFSET_NONE);
+    std::future<IOStatus>
+    read(void *data, size_t length, Offset offset = OFFSET_NONE) override;
+    
+    Offset seek(Offset position, RelativePosition relativePosition = RelativePosition::BEGIN) override;
+    
+    void writeSync(const void *data, size_t length, Offset offset=OFFSET_NONE);
 
-    /** Initiate stream close operation.*/
-    //void
-    //Close(CloseHandler completion_handler);
-
-    //support read operations in future
-
-	void SetFileSize(size_t len) override;
+    void setSize(size_t length) override;
 
 private:
- 
+
+    spdlog::logger& m_logger;
+
     friend class FileProcessor;
 
     /** Current state of the stream. */

@@ -1,6 +1,11 @@
 
 *.db
 *.opendb
-BulkWrite/.vs/BulkWrite/v14/.suo
-/.vs/BulkWrite/v14/.suo
-/BulkWrite/BulkWrite.vcxproj.user
+*.user
+*.suo
+/BulkWrite/x64/
+/BulkWriteClient/x64
+/BulkWriteClient/logs
+/x64/
+/ipch/
+/Debug/

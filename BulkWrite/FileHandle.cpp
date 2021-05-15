@@ -1,8 +1,5 @@
 
-#include<iostream>
-#include <Windows.h>
-
-
+#include "spdlog/spdlog.h"
 #include "FileHandle.h"
 #include "FileMode.h"
 #include "Overlapped.h"
@@ -20,131 +17,83 @@ w+"	write/update: Create an empty file and open it for update (both for input an
 If a file with the same name already exists its contents are discarded and the file is treated as a new empty file.
 
 */
-FileHandle::FileHandle(
-    const std::string &path, const FileMode& mode)
+FileHandle::FileHandle(spdlog::logger& log, const std::string &path, const FileMode& mode)
+    : m_logger(log)
+    , m_closed(false)
 {
-    DWORD access = 0, creation = 0, share_mode = 0;
+    SPDLOG_LOGGER_TRACE(m_logger, "FileHandle");
 
-    if (mode.read) {
-        access = GENERIC_READ;
-        share_mode = FILE_SHARE_READ;
-        creation = OPEN_EXISTING;
-        if (mode.extended) {
-            access |= GENERIC_WRITE;
-        } else {
-            share_mode |= FILE_SHARE_WRITE;
-        }
-    } else if (mode.write) {
-        access = GENERIC_WRITE;
-        share_mode = FILE_SHARE_READ;
-        creation = CREATE_ALWAYS;
-        if (mode.extended) {
-            access |= GENERIC_READ;
-        }
-   
-    }
-	else if (mode.append) {
-		access = FILE_APPEND_DATA;
-		share_mode = FILE_SHARE_READ;
-		creation = OPEN_ALWAYS;
-		if (mode.extended) {
-			access |= GENERIC_READ;
-		}
+    m_fileHandle = std::shared_ptr<void>(createFile(path, mode), CloseHandle);
 
-	}
-	else {
-        throw std::exception("Not supported format");
-    }
-
-    const auto hFileHandle = CreateFileA(path.c_str(), access, share_mode,
-                NULL, creation, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED,
-                0);
-   
-    if (hFileHandle == INVALID_HANDLE_VALUE) {
-        auto error = ::GetLastError();
-		std::cout << "Error in CreateFileA :" << getErrorDescription(error) << "Path : "<< path << "\n";
-        switch (error) {
-        case ERROR_ACCESS_DENIED:
-            throw std::exception("Insufficient permissions for file opening");
-        case ERROR_ALREADY_EXISTS:
-        case ERROR_FILE_EXISTS:
-           throw std::exception("File already exists");
-        case ERROR_FILE_NOT_FOUND:
-           throw std::exception("File not found");
-        default:
-            throw std::exception("Failed to open file");
-        }
-    }
-    m_hFileHandle = std::shared_ptr<void>(hFileHandle, CloseHandle);
-
-    m_bclosed = false;
+    m_logger.debug("FileHandle {0} opened for path {1}", m_fileHandle.get(), path);
 }
 
 FileHandle::~FileHandle()
 {
-    if (!m_bclosed) {
-        Close();
+    SPDLOG_LOGGER_TRACE(m_logger, "~FileHandle");
+    if (!m_closed) {
+        close();
     }
-	std::cout << " \n DEBUG:Destructor FileHandle \n";
 }
 
-void FileHandle::SetFileSize(size_t size)
+void FileHandle::setFileSize(size_t size)
 {
-	//auto result = SetFilePointer(this->m_hFileHandle, size, NULL, FILE_BEGIN);
-	LARGE_INTEGER filePosition = { 0 };
-	filePosition.QuadPart = size;
-	auto result = SetFilePointerEx(m_hFileHandle.get(), filePosition,NULL, FILE_BEGIN);
-	if (result == INVALID_SET_FILE_POINTER)
-	{
-		std::cout << "ERROR: SetFilePointer failed: " << getLastSystemError();
-	}
-	else
-	{
-		if (!SetEndOfFile(m_hFileHandle.get()))
-		{
-			std::cout << "ERROR: SetEndOfFile failed : " << getLastSystemError();
-		}
-	}
+    m_logger.debug("setFileSize handle {0} size {1}", m_fileHandle.get(), size);
+
+    LARGE_INTEGER filePosition;
+    filePosition.QuadPart = size;
+
+    const auto result = SetFilePointerEx(m_fileHandle.get(), 
+        filePosition, nullptr, FILE_BEGIN);
+
+    if (result == INVALID_SET_FILE_POINTER)
+    {
+        m_logger.error("SetFilePointer failed with error:{}", getLastSystemError());
+        return;
+    }
+
+    if (!SetEndOfFile(m_fileHandle.get()))
+    {
+        m_logger.error("SetEndOfFile failed with error:{}", getLastSystemError());
+    }
 }
 
 void
-FileHandle::Close()
+FileHandle::close()
 {
-	CancelIoEx(m_hFileHandle.get(),NULL);
-	m_hFileHandle.reset(INVALID_HANDLE_VALUE);
-    
-	m_bclosed = true;
-	std::cout << "FileHandle Closed \n";
-    /* Current requests are aborted by caller. */
+    m_logger.debug("closing file handle {0}", m_fileHandle.get());
+    CancelIoEx(m_fileHandle.get(), nullptr);
+    m_fileHandle.reset();
+    m_closed = true;
 }
 
 
 std::future<IOStatus>
-FileHandle::Write(const Offset fileOffset, const void* buffer, const size_t len)
+FileHandle::write(const Offset fileOffset, const void* buffer, const size_t numberOfBytesToWrite) const
 {
-    
-    std::cout<<"DEBUG::FileHandle::Write enter \n";
     auto overlapped = std::make_shared<std::unique_ptr<Overlapped>>(new Overlapped());
-    (*overlapped)->handle = m_hFileHandle;
+    (*overlapped)->handle = m_fileHandle;
 
-    std::promise<IOStatus> &statusPromise = overlapped->get()->status;
+    auto& statusPromise = overlapped->get()->status;
 
-    if (buffer == nullptr || len <= 0) {
+    if (buffer == nullptr || numberOfBytesToWrite <= 0) {
         statusPromise.set_value({ Status::OTHER_FAILURE,0 });
         return statusPromise.get_future();
     }
+    constexpr int dd = sizeof(size_t);
+    constexpr int dd1 = sizeof(Offset);
 
     if (fileOffset != OFFSET_NONE) {
-        // Write the data. 
-        DWORD offset = (DWORD)fileOffset;
-        (*overlapped)->Offset = offset & 0xFFFFFFFF;
-        (*overlapped)->OffsetHigh = (DWORD)(offset >> sizeof(offset) * 8);
+        (*overlapped)->Offset = static_cast<DWORD>(fileOffset % 0x100000000);
+        (*overlapped)->OffsetHigh = static_cast<DWORD>(fileOffset / 0x100000000);
     }
 
-    DWORD numberOfBytesWritten = 0;
-    ::WriteFile(m_hFileHandle.get(),buffer, len, &numberOfBytesWritten,overlapped->get());
+    m_logger.debug("Write {0} enter with buffer {1} and size {2} at offset {3}", m_fileHandle.get(), buffer, numberOfBytesToWrite, (*overlapped)->Offset);
 
-    auto error = ::GetLastError();
+    DWORD numberOfBytesWritten = 0;
+    ::WriteFile(m_fileHandle.get(),buffer, static_cast<DWORD>(numberOfBytesToWrite), &numberOfBytesWritten,overlapped->get());
+
+    const auto error = ::GetLastError();
    
     switch (error)
     {
@@ -154,16 +103,117 @@ FileHandle::Write(const Offset fileOffset, const void* buffer, const size_t len)
         break;
     default: 
         statusPromise.set_value({ MapError(error),numberOfBytesWritten });
-        if (auto handle = (*overlapped)->handle.lock())
+        if (const auto handle = (*overlapped)->handle.lock())
         {
-            std::cout << "WriteFileEx" << handle << ": Error " << getErrorDescription(error);
+            m_logger.error("WriteFileEx failed with error {0} for handle {1}", getErrorDescription(error), m_fileHandle.get());
         }
-           
     }
 
-    std::cout << "DEBUG:FileHandle::Write exit \n";
     return statusPromise.get_future();
-   
+}
+
+std::future<IOStatus>
+FileHandle::read(Offset offset, void* buffer, size_t numberOfBytesToRead) const
+{
+    auto overlapped = std::make_shared<std::unique_ptr<Overlapped>>(new Overlapped());
+    (*overlapped)->handle = m_fileHandle;
+
+    auto& statusPromise = overlapped->get()->status;
+
+    if (buffer == nullptr || numberOfBytesToRead <= 0) {
+        statusPromise.set_value({ Status::OTHER_FAILURE,0 });
+        return statusPromise.get_future();
+    }
+    constexpr int dd = sizeof(size_t);
+    constexpr int dd1 = sizeof(Offset);
+
+    if (offset != OFFSET_NONE) {
+        (*overlapped)->Offset = static_cast<DWORD>(offset % 0x100000000);
+        (*overlapped)->OffsetHigh = static_cast<DWORD>(offset / 0x100000000);
+    }
+
+    m_logger.debug("read {0} enter with buffer {1} and size {2} at offset {3}", m_fileHandle.get(), buffer, numberOfBytesToRead, (*overlapped)->Offset);
+
+    DWORD numberOfBytesRead = 0;
+    ::ReadFile(m_fileHandle.get(), buffer, static_cast<DWORD>(numberOfBytesToRead), &numberOfBytesRead, overlapped->get());
+
+    const auto error = ::GetLastError();
+
+    switch (error)
+    {
+    case ERROR_SUCCESS:
+    case ERROR_IO_PENDING:
+        overlapped->release();
+        break;
+    default:
+        statusPromise.set_value({ MapError(error),numberOfBytesRead });
+        if (const auto handle = (*overlapped)->handle.lock())
+        {
+            m_logger.error("WriteFileEx failed with error {0} for handle {1}", getErrorDescription(error), m_fileHandle.get());
+        }
+    }
+
+    return statusPromise.get_future();
+}
+
+HANDLE FileHandle::createFile(const std::string &path, const FileMode& mode) const
+{
+    DWORD access, creation, shareMode;
+
+    if (mode.read) {
+        access = GENERIC_READ;
+        shareMode = FILE_SHARE_READ;
+        creation = OPEN_EXISTING;
+        if (mode.extended) {
+            access |= GENERIC_WRITE;
+        }
+        else {
+            shareMode |= FILE_SHARE_WRITE;
+        }
+    }
+    else if (mode.write) {
+        access = GENERIC_WRITE;
+        shareMode = FILE_SHARE_READ;
+        creation = CREATE_ALWAYS;
+        if (mode.extended) {
+            access |= GENERIC_READ;
+        }
+
+    }
+    else if (mode.append) {
+        access = FILE_APPEND_DATA;
+        shareMode = FILE_SHARE_READ;
+        creation = OPEN_ALWAYS;
+        if (mode.extended) {
+            access |= GENERIC_READ;
+        }
+    }
+    else {
+        throw std::exception("Not supported format");
+    }
+
+    auto* const hFileHandle = CreateFileA(path.c_str(), access, shareMode,
+        nullptr, creation,
+        FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED,
+        nullptr);
+
+    if (hFileHandle == INVALID_HANDLE_VALUE) {
+        const auto error = ::GetLastError();
+        m_logger.error("CreateFileA failed with error:{}", getErrorDescription(error));
+        switch (error) {
+        case ERROR_ACCESS_DENIED:
+            throw std::exception("Insufficient permissions for file opening");
+        case ERROR_ALREADY_EXISTS:
+        case ERROR_FILE_EXISTS:
+            throw std::exception("File already exists");
+        case ERROR_FILE_NOT_FOUND:
+            throw std::exception("File not found");
+        default:
+            throw std::exception("Failed to open file");
+        }
+    }
+
+    return hFileHandle;
 }
 
 }

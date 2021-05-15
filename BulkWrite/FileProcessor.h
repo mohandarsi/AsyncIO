@@ -1,28 +1,34 @@
 #pragma once
-#include "interfaces.h"
+#include "IFileProcessor.h"
+
+namespace spdlog {
+    class logger;
+}
 
 namespace FileAPI
 {
 
 class OverlappedIOController;
+class IFileStream;
 class FileStream;
+
 class FileProcessor : public IFileProcessor
 {
 public:
-    FileProcessor(void);
-    virtual ~FileProcessor(void);
+    explicit FileProcessor(spdlog::logger& log);
+    virtual ~FileProcessor();
 
-    /*Open file.*/
-	std::unique_ptr<IFileStream>
-    Open(const std::string &name,const std::string &mode) override;
+    std::unique_ptr<IFileStream>
+    open(const std::string &name,const std::string &mode) override;
 
-    void Enable();
+    void enable() override;
 
 private:
-    /** I/O controller instance. */
-    std::unique_ptr<OverlappedIOController> m_ptrIOcontroller;
+    void registerStream(FileStream&) const;
 
-    void RegisterStream(FileStream&);
+private:
+    spdlog::logger& m_logger;
+    std::unique_ptr<OverlappedIOController> m_iocontroller;
 };
 
 }
