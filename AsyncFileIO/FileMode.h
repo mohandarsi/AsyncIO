@@ -1,7 +1,7 @@
 #pragma once
 #include<string>
 
-namespace FileAPI
+namespace AsyncFileIO
 {
 
 class FileMode

@@ -3,9 +3,11 @@
 *.opendb
 *.user
 *.suo
-/BulkWrite/x64/
-/BulkWriteClient/x64
-/BulkWriteClient/logs
+/AsyncFileIO/Debug/
+/AsyncFileIOClient/Debug/
+/AsyncFileIO/x64/
+/AsyncFileIOClient/x64
+/AsyncFileIOClient/logs
 /x64/
 /ipch/
 /Debug/

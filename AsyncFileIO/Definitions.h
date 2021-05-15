@@ -1,6 +1,6 @@
 #pragma once
 
-namespace FileAPI
+namespace AsyncFileIO
 {
 
 /* Offset for read/write operations*/
@@ -29,8 +29,14 @@ enum class Status {
 
 struct IOStatus
 {
-    Status status;
-    size_t transferedBytes;
+    Status status { Status::OTHER_FAILURE };
+    size_t transferedBytes { 0 };
+    IOStatus() {}
+    IOStatus(const Status status, const size_t transferedBytes)
+        : status(status)
+        , transferedBytes(transferedBytes)
+    {
+    }
 };
 
 }

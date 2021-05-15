@@ -5,7 +5,7 @@
 #include "Overlapped.h"
 #include "Utils.h"
 
-namespace FileAPI
+namespace AsyncFileIO
 {
 
 /*Open file.
@@ -71,8 +71,7 @@ FileHandle::close()
 std::future<IOStatus>
 FileHandle::write(const Offset fileOffset, const void* buffer, const size_t numberOfBytesToWrite) const
 {
-    auto overlapped = std::make_shared<std::unique_ptr<Overlapped>>(new Overlapped());
-    (*overlapped)->handle = m_fileHandle;
+    auto overlapped = std::make_shared<std::unique_ptr<Overlapped>>(new Overlapped(m_fileHandle));
 
     auto& statusPromise = overlapped->get()->status;
 
@@ -80,12 +79,10 @@ FileHandle::write(const Offset fileOffset, const void* buffer, const size_t numb
         statusPromise.set_value({ Status::OTHER_FAILURE,0 });
         return statusPromise.get_future();
     }
-    constexpr int dd = sizeof(size_t);
-    constexpr int dd1 = sizeof(Offset);
 
     if (fileOffset != OFFSET_NONE) {
-        (*overlapped)->Offset = static_cast<DWORD>(fileOffset % 0x100000000);
-        (*overlapped)->OffsetHigh = static_cast<DWORD>(fileOffset / 0x100000000);
+        (*overlapped)->Offset = static_cast<DWORD>(fileOffset);
+        (*overlapped)->OffsetHigh = static_cast<DWORD>(fileOffset >> 32);
     }
 
     m_logger.debug("Write {0} enter with buffer {1} and size {2} at offset {3}", m_fileHandle.get(), buffer, numberOfBytesToWrite, (*overlapped)->Offset);
@@ -99,24 +96,21 @@ FileHandle::write(const Offset fileOffset, const void* buffer, const size_t numb
     {
     case ERROR_SUCCESS:
     case ERROR_IO_PENDING:
+        // we are just releasing the pointer not memory. Actual memory gets deallocated in callback of overlapped
         overlapped->release();
         break;
     default: 
         statusPromise.set_value({ MapError(error),numberOfBytesWritten });
-        if (const auto handle = (*overlapped)->handle.lock())
-        {
-            m_logger.error("WriteFileEx failed with error {0} for handle {1}", getErrorDescription(error), m_fileHandle.get());
-        }
+        m_logger.error("WriteFileEx failed with error {0} for handle {1}", getErrorDescription(error), m_fileHandle.get());
     }
 
     return statusPromise.get_future();
 }
 
 std::future<IOStatus>
-FileHandle::read(Offset offset, void* buffer, size_t numberOfBytesToRead) const
+FileHandle::read(Offset fileOffset, void* buffer, size_t numberOfBytesToRead) const
 {
-    auto overlapped = std::make_shared<std::unique_ptr<Overlapped>>(new Overlapped());
-    (*overlapped)->handle = m_fileHandle;
+    auto overlapped = std::make_shared<std::unique_ptr<Overlapped>>(new Overlapped(m_fileHandle));
 
     auto& statusPromise = overlapped->get()->status;
 
@@ -124,12 +118,10 @@ FileHandle::read(Offset offset, void* buffer, size_t numberOfBytesToRead) const
         statusPromise.set_value({ Status::OTHER_FAILURE,0 });
         return statusPromise.get_future();
     }
-    constexpr int dd = sizeof(size_t);
-    constexpr int dd1 = sizeof(Offset);
 
-    if (offset != OFFSET_NONE) {
-        (*overlapped)->Offset = static_cast<DWORD>(offset % 0x100000000);
-        (*overlapped)->OffsetHigh = static_cast<DWORD>(offset / 0x100000000);
+    if (fileOffset != OFFSET_NONE) {
+        (*overlapped)->Offset = static_cast<DWORD>(fileOffset);
+        (*overlapped)->OffsetHigh = static_cast<DWORD>(fileOffset >> 32);
     }
 
     m_logger.debug("read {0} enter with buffer {1} and size {2} at offset {3}", m_fileHandle.get(), buffer, numberOfBytesToRead, (*overlapped)->Offset);
@@ -147,10 +139,7 @@ FileHandle::read(Offset offset, void* buffer, size_t numberOfBytesToRead) const
         break;
     default:
         statusPromise.set_value({ MapError(error),numberOfBytesRead });
-        if (const auto handle = (*overlapped)->handle.lock())
-        {
-            m_logger.error("WriteFileEx failed with error {0} for handle {1}", getErrorDescription(error), m_fileHandle.get());
-        }
+        m_logger.error("WriteFileEx failed with error {0} for handle {1}", getErrorDescription(error), m_fileHandle.get());
     }
 
     return statusPromise.get_future();

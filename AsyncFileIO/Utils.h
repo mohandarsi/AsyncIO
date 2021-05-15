@@ -4,7 +4,7 @@
 
 #include "Definitions.h"
 
-namespace FileAPI
+namespace AsyncFileIO
 {
 
     Status MapError(DWORD error);

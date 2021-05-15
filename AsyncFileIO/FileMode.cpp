@@ -1,6 +1,6 @@
 #include "FileMode.h"
 
-namespace FileAPI
+namespace AsyncFileIO
 {
 
 FileMode::FileMode(const std::string& mode)

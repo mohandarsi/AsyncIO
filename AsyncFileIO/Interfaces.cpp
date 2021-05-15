@@ -1,7 +1,7 @@
 #include "Interfaces.h"
 #include "FileProcessor.h"
 
-namespace FileAPI
+namespace AsyncFileIO
 {
     std::unique_ptr<IFileProcessor> CreateFileProcessor(spdlog::logger& log)
     {

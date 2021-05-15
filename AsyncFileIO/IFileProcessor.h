@@ -2,7 +2,7 @@
 #include <memory>
 #include <string>
 
-namespace FileAPI
+namespace AsyncFileIO
 {
 class IFileStream;
 

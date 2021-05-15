@@ -8,7 +8,7 @@
 #include "OverlappedIOController.h"
 
 
-namespace FileAPI
+namespace AsyncFileIO
 {
 
 FileProcessor::FileProcessor(spdlog::logger& log)
@@ -30,7 +30,7 @@ void FileProcessor::enable()
 }
 
 std::unique_ptr<IFileStream>
-FileProcessor::open(const std::string &name, const std::string &mode)
+FileProcessor::open(const std::string& name, const std::string& mode)
 {
     auto* fileStream = new FileStream(m_logger,name, FileMode(mode));
     registerStream(*fileStream);

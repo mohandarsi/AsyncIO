@@ -5,7 +5,7 @@ namespace spdlog {
     class logger;
 }
 
-namespace FileAPI
+namespace AsyncFileIO
 {
 
 class OverlappedIOController;
@@ -19,7 +19,7 @@ public:
     virtual ~FileProcessor();
 
     std::unique_ptr<IFileStream>
-    open(const std::string &name,const std::string &mode) override;
+    open(const std::string& name,const std::string& mode) override;
 
     void enable() override;
 

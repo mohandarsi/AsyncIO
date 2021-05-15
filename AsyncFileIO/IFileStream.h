@@ -3,7 +3,7 @@
 #include <future>
 #include "Definitions.h"
 
-namespace FileAPI
+namespace AsyncFileIO
 {
 
 enum class RelativePosition

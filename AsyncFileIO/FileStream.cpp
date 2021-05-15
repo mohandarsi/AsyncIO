@@ -5,7 +5,7 @@
 #include "FileHandle.h"
 #include "FileMode.h"
 
-namespace FileAPI
+namespace AsyncFileIO
 {
 
 FileStream::FileStream(spdlog::logger& log, const std::string &path, const FileMode& mode)
@@ -32,7 +32,7 @@ FileStream::getName() const
 
 void FileStream::setSize(const size_t length)
 {
-	m_ptrFileHandle->setFileSize(length);
+    m_ptrFileHandle->setFileSize(length);
 }
 
 void
@@ -41,7 +41,7 @@ FileStream::setName(const std::string& newName)
     m_szName = newName;
 }
 
-FileAPI::Offset FileStream::seek(const Offset position, const RelativePosition relativePosition)
+AsyncFileIO::Offset FileStream::seek(const Offset position, const RelativePosition relativePosition)
 {
     auto newPosition = m_currentPos;
     if (relativePosition == RelativePosition::CURRENT) {

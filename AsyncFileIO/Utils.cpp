@@ -4,7 +4,7 @@
 #include "Windows.h"
 #include "Utils.h"
 
-namespace FileAPI
+namespace AsyncFileIO
 {
 std::string getErrorDescription(DWORD code)
 {
@@ -30,7 +30,7 @@ getLastSystemError()
 
 
 /*
-  Windows error to Libarary specific error
+  Windows error to Library specific error
 */
 
 Status MapError(DWORD error)
@@ -42,6 +42,9 @@ Status MapError(DWORD error)
         return Status::ABORTED;
     case ERROR_INVALID_HANDLE:
         return Status::CLOSED;
+    case ERROR_IO_INCOMPLETE:
+    case ERROR_IO_PENDING:
+        return Status::PENDING;
     default:
         return Status::OTHER_FAILURE;
     }

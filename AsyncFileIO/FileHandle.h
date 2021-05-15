@@ -7,7 +7,7 @@ namespace spdlog {
     class logger;
 }
 
-namespace FileAPI
+namespace AsyncFileIO
 {
 
 class FileMode;

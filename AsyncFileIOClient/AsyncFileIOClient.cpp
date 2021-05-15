@@ -1,20 +1,18 @@
 // BulkWriteClient.cpp : Defines the entry point for the console application.
 //
 
-#include "stdafx.h"
-
 #include <iostream>
 #include <chrono>
 #include <random>
 
-#include "../BulkWrite/Interfaces.h"
-#include "../BulkWrite/IFileStream.h"
-#include "../BulkWrite/IFileProcessor.h"
+#include "../AsyncFileIO/Interfaces.h"
+#include "../AsyncFileIO/IFileStream.h"
+#include "../AsyncFileIO/IFileProcessor.h"
 
 #include "spdlog/sinks/basic_file_sink.h"
 
 using namespace std;
-using namespace FileAPI;
+using namespace AsyncFileIO;
 
 using Image = std::vector<unsigned char>;
 
@@ -62,7 +60,7 @@ int main()
         auto writeRequest = fileStream->write(&image1[0], imageSizeInBytes, OFFSET_NONE);
         writeRequest.wait();
         auto writeIOStatus = writeRequest.get();
-        if (writeIOStatus.status != Status::OK)
+        if (writeIOStatus.status != Status::OK || (writeIOStatus.transferedBytes != imageSizeInBytes))
             std::cout << "ERROR in Write at " << i << std::endl;
         fileStream->seek(writeIOStatus.transferedBytes, RelativePosition::CURRENT);
         ++i;
@@ -80,7 +78,7 @@ int main()
         auto readRequest = fileStream->read(&image2[0], imageSizeInBytes, OFFSET_NONE);
         readRequest.wait();
         auto readIOStatus = readRequest.get();
-        if (readIOStatus.status != Status::OK || (image1 != image2))
+        if (readIOStatus.status != Status::OK || (image1 != image2) || (readIOStatus.transferedBytes != imageSizeInBytes))
             std::cout << "ERROR in read at "<< i << std::endl;
         fileStream->seek(readIOStatus.transferedBytes, RelativePosition::CURRENT);
         ++i;

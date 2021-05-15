@@ -5,7 +5,7 @@
 #include "Utils.h"
 #include "Overlapped.h"
 
-namespace FileAPI
+namespace AsyncFileIO
 {
 
 #define DISPATCHER_STOP (0)

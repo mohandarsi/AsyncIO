@@ -6,7 +6,7 @@
 
 #include "spdlog/spdlog.h"
 
-namespace FileAPI
+namespace AsyncFileIO
 {
 
 class FileHandle;

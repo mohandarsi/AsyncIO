@@ -6,7 +6,7 @@ namespace spdlog {
     class logger;
 }
 
-namespace FileAPI
+namespace AsyncFileIO
 {
 
 /** Stream class which represents opened file. */
@@ -38,7 +38,7 @@ public:
     };
 
 public:
-    FileStream(spdlog::logger& log, const std::string &path, const FileMode& mode);
+    FileStream(spdlog::logger& log, const std::string& path, const FileMode& mode);
     virtual ~FileStream();
 
     FileState getState() const
@@ -79,7 +79,6 @@ private:
     /** Human readable stream name. */
     std::string m_szName;
 
-   
     /** Current position in file when maintained by stream. */
     Offset m_currentPos;
 

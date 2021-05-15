@@ -4,14 +4,15 @@
 #include<future>
 
 #include <Windows.h>
-namespace FileAPI
+namespace AsyncFileIO
 {
 struct Overlapped : OVERLAPPED
 {
-    Overlapped();
-    ~Overlapped() = default;
+    Overlapped(std::weak_ptr<void> handle);
+    ~Overlapped();
+
     static VOID CALLBACK callback(DWORD errorCode, DWORD numberOfBytesTransferred, LPOVERLAPPED lpOverlapped);
-    std::weak_ptr<void> handle;
+    std::weak_ptr<void> fileHandle;
     std::promise<IOStatus> status;
 };
 }
