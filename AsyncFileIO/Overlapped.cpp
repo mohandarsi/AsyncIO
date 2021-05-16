@@ -8,20 +8,21 @@
 namespace AsyncFileIO
 {
 
-Overlapped::Overlapped(std::weak_ptr<void> handle)
+Overlapped::Overlapped(std::weak_ptr<void> handle, const int64_t fileOffset)
     : fileHandle(handle)
     , status{}
 {
     SPDLOG_TRACE("Overlapped");
     std::memset(static_cast<OVERLAPPED *>(this), 0, sizeof(OVERLAPPED));
+
+    Offset = static_cast<DWORD>(fileOffset);
+    OffsetHigh = static_cast<DWORD>(fileOffset >> 32);
 }
 
 Overlapped::~Overlapped()
 {
     SPDLOG_TRACE("~Overlapped");
     fileHandle.reset();
-
-    
 }
 
 VOID CALLBACK Overlapped::callback(const DWORD errorCode, const DWORD numberOfBytesTransferred, const LPOVERLAPPED lpOverlapped)

@@ -143,9 +143,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Text Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="Definitions.h" />
     <ClInclude Include="FileHandle.h" />
     <ClInclude Include="FileMode.h" />

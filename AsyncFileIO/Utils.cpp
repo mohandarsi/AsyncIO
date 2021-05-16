@@ -21,12 +21,10 @@ std::string getErrorDescription(DWORD code)
     return ss.str();
 }
 
-std::string
-getLastSystemError()
+std::string getLastSystemError()
 {
     return getErrorDescription(::GetLastError());
 }
-
 
 
 /*

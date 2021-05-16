@@ -55,7 +55,7 @@ int main()
     while (i<noImages) 
     {
         auto startA = chrono::high_resolution_clock::now();
-        auto writeRequest = fileStream->write(&image1[0], imageSizeInBytes, OFFSET_NONE);
+        auto writeRequest = fileStream->write(&image1[0], imageSizeInBytes);
         writeRequest.wait();
         auto& writeIOStatus = writeRequest.get();
 
@@ -80,7 +80,7 @@ int main()
     {
         Image image2(SIZE*NOPIXELS);
         auto startA = chrono::high_resolution_clock::now();
-        auto readRequest = fileStream->read(&image2[0], imageSizeInBytes, OFFSET_NONE);
+        auto readRequest = fileStream->read(&image2[0], imageSizeInBytes);
         readRequest.wait();
         auto& readIOStatus = readRequest.get();
         auto endA = chrono::high_resolution_clock::now();

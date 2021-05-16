@@ -6,8 +6,7 @@ namespace AsyncFileIO
 /* Offset for read/write operations*/
 typedef __int64 Offset;
 
-const Offset OFFSET_NONE = -1;
-const Offset OFFSET_END = LLONG_MAX;
+const Offset CURRENT_FILE_OFFSET = -1;
 
 enum class Status {
     /** Operation completed successfully. */

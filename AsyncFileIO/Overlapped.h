@@ -8,7 +8,7 @@ namespace AsyncFileIO
 {
 struct Overlapped : OVERLAPPED
 {
-    Overlapped(std::weak_ptr<void> handle);
+    Overlapped(std::weak_ptr<void> handle, int64_t fileOffset);
     ~Overlapped();
 
     static VOID CALLBACK callback(DWORD errorCode, DWORD numberOfBytesTransferred, LPOVERLAPPED lpOverlapped);

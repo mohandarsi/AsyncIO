@@ -10,18 +10,16 @@ namespace AsyncFileIO
 
 FileStream::FileStream(spdlog::logger& log, const std::string &path, const FileMode& mode)
     : m_logger(log)
-    , m_state(FileState::CLOSED)
     , m_currentPos(0)
     , m_ptrFileHandle(std::make_unique<FileHandle>(log,path,mode))
 {
-    m_logger.trace("FileStream");
+    m_logger.trace("FileStream::FileStream");
     setName(path);
-    m_state = FileState::OPENED;
 }
 
 FileStream::~FileStream()
 {
-    m_logger.trace("~FileStream");
+    m_logger.trace("FileStream::~FileStream");
 }
 
 std::string
@@ -61,7 +59,7 @@ FileStream::write(const void *data, const size_t length, Offset offset)
 {
     m_logger.debug("write with size {} and offset {}", length, offset);
 
-    if (offset == OFFSET_NONE)
+    if (offset <= CURRENT_FILE_OFFSET)
     {
         offset = m_currentPos;
     }
@@ -72,7 +70,8 @@ std::future<IOStatus>
 FileStream::read(void *data, size_t length, Offset offset)
 {
     m_logger.debug("read with size {} and offset {}", length, offset);
-    if (offset == OFFSET_NONE)
+
+    if (offset <= CURRENT_FILE_OFFSET)
     {
         offset = m_currentPos;
     }

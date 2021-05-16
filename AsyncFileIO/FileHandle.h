@@ -1,7 +1,6 @@
 #pragma once
 
 #include<future>
-#include "Definitions.h"
 
 namespace spdlog {
     class logger;
@@ -11,6 +10,7 @@ namespace AsyncFileIO
 {
 
 class FileMode;
+struct IOStatus;
 
 class FileHandle {
 
@@ -20,16 +20,15 @@ public:
 
     virtual  ~FileHandle();
 
-    virtual void setFileSize(size_t size);
+    void setFileSize(size_t size);
 
-    std::future<IOStatus>  write(Offset offset, const void* buffer, size_t numberOfBytesToWrite) const;
-    std::future<IOStatus>  read(Offset offset, void* buffer, size_t numberOfBytesToRead) const;
-    
-    bool isClosed() const { return m_closed;}
+    std::future<IOStatus>  write(int64_t  offset, const void* buffer, size_t numberOfBytesToWrite) const;
+    std::future<IOStatus>  read(int64_t  offset, void* buffer, size_t numberOfBytesToRead) const;
 
 private:
 
     void close();
+    bool isClosed() const { return m_closed; }
     HANDLE createFile(const std::string &path, const FileMode& mode) const;
 
 private:
