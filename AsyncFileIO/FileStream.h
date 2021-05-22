@@ -9,9 +9,11 @@ namespace spdlog {
 namespace AsyncFileIO
 {
 
-/** Stream class which represents opened file. */
+
+	/** Stream class which represents opened file. */
 class FileHandle;
 class FileMode;
+class IOBuffer;
 
 class FileStream : public IFileStream
 {
@@ -24,15 +26,13 @@ public:
     std::string  getName() const;
 
     std::future<IOStatus>
-    write(const void *data, size_t length, Offset offset = CURRENT_FILE_OFFSET) override;
+    write(const IOBuffer& buffer, Offset offset = CURRENT_FILE_OFFSET) override;
     
     std::future<IOStatus>
-    read(void *data, size_t length, Offset offset = CURRENT_FILE_OFFSET) override;
+    read(IOBuffer& buffer, Offset offset = CURRENT_FILE_OFFSET) override;
     
     Offset seek(Offset position, RelativePosition relativePosition = RelativePosition::BEGIN) override;
     
-    void writeSync(const void *data, size_t length, Offset offset=CURRENT_FILE_OFFSET);
-
     void setSize(size_t length) override;
 
 private:

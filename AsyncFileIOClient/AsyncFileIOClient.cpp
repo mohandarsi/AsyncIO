@@ -5,6 +5,7 @@
 #include "../AsyncFileIO/Interfaces.h"
 #include "../AsyncFileIO/IFileStream.h"
 #include "../AsyncFileIO/IFileProcessor.h"
+#include "../AsyncFileIO/IOBuffer.h"
 
 #include "spdlog/sinks/basic_file_sink.h"
 
@@ -52,10 +53,13 @@ int main()
     //write loop
     auto i = 0;
     auto start = chrono::high_resolution_clock::now();
+
     while (i<noImages) 
     {
+        IOBuffer buffer(&image1[0], imageSizeInBytes, [](void*) {std::cout << "empty deleter as actual data held by vector" << std::endl; });
+    	
         auto startA = chrono::high_resolution_clock::now();
-        auto writeRequest = fileStream->write(&image1[0], imageSizeInBytes);
+        auto writeRequest = fileStream->write(buffer);
         writeRequest.wait();
         auto& writeIOStatus = writeRequest.get();
 
@@ -78,9 +82,11 @@ int main()
     start = chrono::high_resolution_clock::now();
     while (i < noImages)
     {
-        Image image2(SIZE*NOPIXELS);
+        Image image2(imageSizeInBytes);
+        IOBuffer buffer(&image2[0], imageSizeInBytes, [](void*) {std::cout << "empty deleter as actual data held by vector" << std::endl; });
+
         auto startA = chrono::high_resolution_clock::now();
-        auto readRequest = fileStream->read(&image2[0], imageSizeInBytes);
+        auto readRequest = fileStream->read(buffer);
         readRequest.wait();
         auto& readIOStatus = readRequest.get();
         auto endA = chrono::high_resolution_clock::now();

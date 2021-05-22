@@ -4,6 +4,7 @@
 #include "FileStream.h"
 #include "FileHandle.h"
 #include "FileMode.h"
+#include "IOBuffer.h"
 
 namespace AsyncFileIO
 {
@@ -55,33 +56,27 @@ AsyncFileIO::Offset FileStream::seek(const Offset position, const RelativePositi
 }
 
 std::future<IOStatus>
-FileStream::write(const void *data, const size_t length, Offset offset)
+FileStream::write(const IOBuffer& buffer, Offset offset)
 {
-    m_logger.debug("write with size {} and offset {}", length, offset);
+    m_logger.debug("write with size {} and offset {}", buffer.size(), offset);
 
     if (offset <= CURRENT_FILE_OFFSET)
     {
         offset = m_currentPos;
     }
-    return m_ptrFileHandle->write(offset, data, length);
+    return m_ptrFileHandle->write(offset, buffer);
 }
 
 std::future<IOStatus>
-FileStream::read(void *data, size_t length, Offset offset)
+FileStream::read(IOBuffer& buffer, Offset offset)
 {
-    m_logger.debug("read with size {} and offset {}", length, offset);
+    m_logger.debug("read with size {} and offset {}", buffer.size(), offset);
 
     if (offset <= CURRENT_FILE_OFFSET)
     {
         offset = m_currentPos;
     }
-    return m_ptrFileHandle->read(offset, data, length);
-}
-
-void FileStream::writeSync(const void *data, const size_t length, const Offset offset)
-{
-    m_logger.trace("writeSync");
-    write(data, length, offset).wait();
+    return m_ptrFileHandle->read(offset, buffer);
 }
 
 }

@@ -151,6 +151,7 @@
     <ClInclude Include="IFileProcessor.h" />
     <ClInclude Include="IFileStream.h" />
     <ClInclude Include="Interfaces.h" />
+    <ClInclude Include="IOBuffer.h" />
     <ClInclude Include="Overlapped.h" />
     <ClInclude Include="OverlappedIOController.h" />
     <ClInclude Include="Utils.h" />
@@ -161,6 +162,7 @@
     <ClCompile Include="FileProcessor.cpp" />
     <ClCompile Include="FileStream.cpp" />
     <ClCompile Include="Interfaces.cpp" />
+    <ClCompile Include="IOBuffer.cpp" />
     <ClCompile Include="Overlapped.cpp" />
     <ClCompile Include="OverlappedIOController.cpp" />
     <ClCompile Include="Utils.cpp" />

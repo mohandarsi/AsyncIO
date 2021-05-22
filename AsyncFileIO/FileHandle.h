@@ -11,6 +11,7 @@ namespace AsyncFileIO
 
 class FileMode;
 struct IOStatus;
+class IOBuffer;
 
 class FileHandle {
 
@@ -22,8 +23,8 @@ public:
 
     void setFileSize(size_t size);
 
-    std::future<IOStatus>  write(int64_t  offset, const void* buffer, size_t numberOfBytesToWrite) const;
-    std::future<IOStatus>  read(int64_t  offset, void* buffer, size_t numberOfBytesToRead) const;
+    std::future<IOStatus>  write(size_t offset, const IOBuffer& buffer) const;
+    std::future<IOStatus>  read(size_t  offset, IOBuffer& buffer) const;
 
 private:
 
