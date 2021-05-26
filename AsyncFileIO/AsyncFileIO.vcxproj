@@ -152,6 +152,7 @@
     <ClInclude Include="IFileStream.h" />
     <ClInclude Include="Interfaces.h" />
     <ClInclude Include="IOBuffer.h" />
+    <ClInclude Include="logging.h" />
     <ClInclude Include="Overlapped.h" />
     <ClInclude Include="OverlappedIOController.h" />
     <ClInclude Include="Utils.h" />

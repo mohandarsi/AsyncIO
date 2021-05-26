@@ -1,6 +1,5 @@
 #include "windows.h"
 
-#include<iostream>
 #include "Utils.h"
 #include "Overlapped.h"
 #include "spdlog/spdlog.h"
@@ -8,9 +7,8 @@
 namespace AsyncFileIO
 {
 
-Overlapped::Overlapped(std::weak_ptr<void> handle, const int64_t fileOffset)
+Overlapped::Overlapped(const std::weak_ptr<void> handle, const int64_t fileOffset)
     : fileHandle(handle)
-    , status{}
 {
     SPDLOG_TRACE("Overlapped");
     std::memset(static_cast<OVERLAPPED *>(this), 0, sizeof(OVERLAPPED));

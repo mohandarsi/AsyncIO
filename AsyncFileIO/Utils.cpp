@@ -6,12 +6,12 @@
 
 namespace AsyncFileIO
 {
-std::string getErrorDescription(DWORD code)
+std::string getErrorDescription(const DWORD code)
 {
     char desc[1024];
-    DWORD size = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL, code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        desc, sizeof(desc), NULL);
+    auto size = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                               nullptr, code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                               desc, sizeof(desc), nullptr);
     /* Trim trailing new line. */
     if (size >= 2 && desc[size - 2] == 0xd && desc[size - 1] == 0xa) {
         size -= 2;

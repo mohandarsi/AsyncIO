@@ -1,10 +1,9 @@
 
-#include "spdlog/spdlog.h"
+#include "logging.h"
 
 #include "FileProcessor.h"
 #include "FileMode.h"
 #include "FileStream.h"
-#include "FileHandle.h"
 #include "OverlappedIOController.h"
 
 

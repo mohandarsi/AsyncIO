@@ -1,5 +1,5 @@
 
-#include "spdlog/spdlog.h"
+#include "logging.h"
 #include "Definitions.h"
 #include "FileHandle.h"
 #include "FileMode.h"

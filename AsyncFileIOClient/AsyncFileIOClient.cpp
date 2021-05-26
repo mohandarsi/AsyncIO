@@ -63,14 +63,14 @@ int main()
         writeRequest.wait();
         auto& writeIOStatus = writeRequest.get();
 
-        if (writeIOStatus.status != Status::OK || (writeIOStatus.transferedBytes != imageSizeInBytes))
+        if (writeIOStatus.status != Status::OK || (writeIOStatus.transferredBytes != imageSizeInBytes))
             std::cout << "ERROR in Write at " << i << std::endl;
 
         auto endA = chrono::high_resolution_clock::now();
         const auto writeMs = chrono::duration_cast<chrono::milliseconds>(endA - startA);
         std::cout << "Write took: " << i << " " << writeMs.count() << " ms" << std::endl;
 
-        fileStream->seek(writeIOStatus.transferedBytes, RelativePosition::CURRENT);
+        fileStream->seek(writeIOStatus.transferredBytes, RelativePosition::CURRENT);
         ++i;
     }
     auto end = chrono::high_resolution_clock::now();
@@ -92,11 +92,11 @@ int main()
         auto endA = chrono::high_resolution_clock::now();
         const auto readms = chrono::duration_cast<chrono::milliseconds>(endA - startA);
 
-        if (readIOStatus.status != Status::OK || (image1 != image2) || (readIOStatus.transferedBytes != imageSizeInBytes))
+        if (readIOStatus.status != Status::OK || (image1 != image2) || (readIOStatus.transferredBytes != imageSizeInBytes))
             std::cout << "ERROR in read at "<< i << std::endl;
         std::cout << "Read took: " << i << " " << readms.count() << " ms" << std::endl;
 
-        fileStream->seek(readIOStatus.transferedBytes, RelativePosition::CURRENT);
+        fileStream->seek(readIOStatus.transferredBytes, RelativePosition::CURRENT);
         ++i;
     }
     end = chrono::high_resolution_clock::now();

@@ -29,11 +29,12 @@ enum class Status {
 struct IOStatus
 {
     Status status { Status::OTHER_FAILURE };
-    size_t transferedBytes { 0 };
-    IOStatus() {}
-    IOStatus(const Status status, const size_t transferedBytes)
-        : status(status)
-        , transferedBytes(transferedBytes)
+    size_t transferredBytes { 0 };
+    IOStatus() = default;
+
+    IOStatus(const Status s, const size_t numberOfTransferredBytes)
+        : status(s)
+        , transferredBytes(numberOfTransferredBytes)
     {
     }
 };

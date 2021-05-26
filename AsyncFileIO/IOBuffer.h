@@ -1,6 +1,5 @@
 #pragma once
 
-#include <memory>
 #include <functional>
 
 #if !defined(ASYNCFILEIO_API)
@@ -13,9 +12,6 @@
 
 #endif
 
-#pragma warning( push )
-#pragma warning( disable : 4251 ) // TODO how to avoid it??.
-
 namespace AsyncFileIO
 {
 
@@ -25,18 +21,19 @@ public:
 
 	explicit IOBuffer(size_t bufferSize);
 	IOBuffer(void *data, size_t bufferSize, const std::function<void (void*)>& deleter);
+	IOBuffer(const IOBuffer&) = delete;
+	~IOBuffer();
+
+	IOBuffer& operator=(const IOBuffer&) = delete;
 	
 	const void* data() const;
 	void* data();
 	size_t size() const;
 
 private:
-	std::shared_ptr<void> m_buffer;
-	size_t m_size;
-	
+	struct Private;
+	Private* m_p;
 };
 	
 }
-
-#pragma warning( pop )
 

@@ -1,5 +1,5 @@
 
-#include "spdlog/spdlog.h"
+#include "logging.h"
 
 #include "FileStream.h"
 #include "FileHandle.h"
