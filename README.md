@@ -21,8 +21,8 @@ vcpkg install spdlog
 ```cpp
 
 //create an sample buffer which need to be written
-std::vector<unsigned char> image(2048*2048);
-fillWithRandomValues(image);
+IOBuffer imageBuffer(2048 * 2048);
+fillWithRandomValues(imageBuffer);
 
 //initialize file overlapped processor & create an file
 auto fileProcessor(CreateFileProcessor(*logger));
@@ -32,14 +32,19 @@ fileProcessor->enable();
 std::string filename("c:\\Image.data");
 auto filestream = fileProcessor->Open(filename, "w+");
 
-//initite async write request
-auto writeRequest = fileStream->write(&image[0], image.size(), OFFSET_NONE);
-//OFFSET_NONE indicates to read or write operations to consider offset as current file position.
-
-//wait for request to get complete and check status
-writeRequest.wait();
+//write request
+auto writeRequest = fileStream->write(&imageBuffer);
+writeRequest.wait(); //wait for request to get complete and check status
 auto writeIOStatus = writeRequest.get();
-assert(writeIOStatus.status == Status::OK && writeIOStatus.transferedBytes == image.size())
+assert(writeIOStatus.status == Status::OK && writeIOStatus.transferedBytes == imageBuffer.size())
+
+ //read request
+IOBuffer imageReadBuffer(2048 * 2048);
+auto readRequest = fileStream->read(&imageReadBuffer); 
+readRequest.wait();
+
+auto& readIOStatus = readRequest.get();
+assert(readIOStatus.status == Status::OK && (readIOStatus.transferredBytes == imageReadBuffer))
 
 //close the file
 filestream.reset();
