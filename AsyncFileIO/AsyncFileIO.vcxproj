@@ -144,6 +144,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Definitions.h" />
+    <ClInclude Include="dllexportimport.h" />
     <ClInclude Include="FileHandle.h" />
     <ClInclude Include="FileMode.h" />
     <ClInclude Include="FileProcessor.h" />
